@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Далия — отговор на резервация</title>
+<link href="https://fonts.googleapis.com/css2?family=Neucha&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Manrope','Segoe UI',sans-serif;background:#EFEEE9;color:#3F4441;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;line-height:1.6}
+.card{background:#FAF9F6;border-radius:18px;padding:32px 26px;max-width:420px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(63,68,65,.08)}
+h1{font-family:'Neucha',cursive;font-size:34px;margin-bottom:6px}
+.msg{background:#DDE2D2;border-radius:12px;padding:14px 16px;margin:18px 0;font-size:15px}
+.btn{display:block;background:#7C8B5F;color:#fff;text-decoration:none;font-weight:600;padding:14px 20px;border-radius:12px;margin-top:12px;font-size:16px}
+.btn.alt{background:transparent;color:#5C6B45;border:2px solid #7C8B5F}
+.hint{font-size:13px;color:#8A8D86;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Далия</h1>
+  <p id="what">Отговор на резервация</p>
+  <div class="msg" id="msgText"></div>
+  <a class="btn" id="smsBtn" href="#">Изпрати SMS до госта</a>
+  <a class="btn alt" id="callBtn" href="#">Обади се на госта</a>
+  <p class="hint">SMS приложението ще се отвори с готово съобщение — само натисни „Изпрати“.</p>
+</div>
+<script>
+const q = new URLSearchParams(location.search);
+const phone = (q.get('p') || '').replace(/[^\d+]/g, '');
+const ok = q.get('ok') === '1';
+const text = ok
+  ? 'Резервацията е Приета, Благодарим ви!'
+  : 'Резервацията е отхвърлена, за съжаление сме препълнени';
+document.getElementById('what').textContent = ok ? 'Приемане на резервация' : 'Отказ на резервация';
+document.getElementById('msgText').textContent = '„' + text + '“ → ' + phone;
+const smsHref = 'sms:' + phone + '?body=' + encodeURIComponent(text);
+document.getElementById('smsBtn').href = smsHref;
+document.getElementById('callBtn').href = 'tel:' + phone;
+if (phone) location.href = smsHref;
+</script>
+</body>
+</html>

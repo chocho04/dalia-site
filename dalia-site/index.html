@@ -771,8 +771,8 @@ form.addEventListener('submit', async e => {
   ok.classList.add('show');
   ok.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
-  const smsAccept = `sms:${d.phone}?body=${encodeURIComponent('Резервацията е Приета, Благодарим ви!')}`;
-  const smsDeny = `sms:${d.phone}?body=${encodeURIComponent('Резервацията е отхвърлена, за съжаление сме препълнени')}`;
+  const smsAccept = `https://rtdalia.com/sms.html?p=${encodeURIComponent(d.phone)}&ok=1`;
+  const smsDeny = `https://rtdalia.com/sms.html?p=${encodeURIComponent(d.phone)}&ok=0`;
   try {
     const r = await fetch('https://formsubmit.co/ajax/chochosan044@gmail.com', {
       method: 'POST',
