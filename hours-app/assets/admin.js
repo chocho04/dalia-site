@@ -1072,6 +1072,34 @@ async function renderSettings() {
         </div>
 
         <div class="settings-card">
+            <h2>Проверка на местоположение</h2>
+            <p class="muted" style="font-size:.86rem;margin:0 0 14px">
+                Ако е включено, записване и отписване са възможни само когато устройството
+                е в зададения радиус около ресторанта.
+            </p>
+            <form id="geo-form">
+                <label class="check-row">
+                    <input type="checkbox" id="sf-geo-enabled" ${s.geo_enabled ? 'checked' : ''}>
+                    Изисквай местоположение при записване
+                </label>
+                <div class="rate-row">
+                    <label>Ширина (lat)
+                        <input type="text" id="sf-geo-lat" inputmode="decimal" value="${esc(s.geo_lat || '')}">
+                    </label>
+                    <label>Дължина (lng)
+                        <input type="text" id="sf-geo-lng" inputmode="decimal" value="${esc(s.geo_lng || '')}">
+                    </label>
+                </div>
+                <button type="button" class="btn" id="sf-geo-here" style="margin-bottom:16px">📍 Вземи текущата ми позиция</button>
+                <label>Радиус (метри)
+                    <input type="number" id="sf-geo-radius" min="10" max="5000" value="${Number(s.geo_radius) || 150}">
+                </label>
+                <button type="submit" class="btn primary">Запази</button>
+                <span id="geo-saved" class="saved-msg" hidden> ✔ Запазено</span>
+            </form>
+        </div>
+
+        <div class="settings-card">
             <h2>Длъжности</h2>
             <p class="muted" style="font-size:.86rem;margin:0 0 14px">
                 По една длъжност на ред. Списъкът се използва при добавяне и редакция на служител.
@@ -1120,6 +1148,40 @@ async function renderSettings() {
             });
             document.getElementById('sf-password').value = '';
             savedFlash('pass-saved');
+        } catch (err) { alert(err.message); }
+    });
+
+    document.getElementById('sf-geo-here').addEventListener('click', () => {
+        const btn = document.getElementById('sf-geo-here');
+        if (!navigator.geolocation) { alert('Браузърът няма достъп до местоположение.'); return; }
+        btn.disabled = true;
+        btn.textContent = 'Определяне…';
+        navigator.geolocation.getCurrentPosition(
+            (p) => {
+                document.getElementById('sf-geo-lat').value = p.coords.latitude.toFixed(6);
+                document.getElementById('sf-geo-lng').value = p.coords.longitude.toFixed(6);
+                btn.disabled = false;
+                btn.textContent = '📍 Вземи текущата ми позиция';
+            },
+            () => {
+                alert('Неуспешно определяне на позицията. Разрешете достъп до местоположението.');
+                btn.disabled = false;
+                btn.textContent = '📍 Вземи текущата ми позиция';
+            },
+            { enableHighAccuracy: true, timeout: 12000 }
+        );
+    });
+
+    document.getElementById('geo-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await api('save_settings', {
+                geo_enabled: document.getElementById('sf-geo-enabled').checked ? 1 : 0,
+                geo_lat: document.getElementById('sf-geo-lat').value,
+                geo_lng: document.getElementById('sf-geo-lng').value,
+                geo_radius: Number(document.getElementById('sf-geo-radius').value) || 150,
+            });
+            savedFlash('geo-saved');
         } catch (err) { alert(err.message); }
     });
 

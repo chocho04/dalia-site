@@ -76,6 +76,32 @@ function apply_default_schedules(string $monday, string $sunday): void {
     }
 }
 
+// Разстояние между две GPS точки в метри (хаверсинова формула).
+function geo_distance_m(float $lat1, float $lng1, float $lat2, float $lng2): float {
+    $a = sin(deg2rad($lat2 - $lat1) / 2) ** 2
+       + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin(deg2rad($lng2 - $lng1) / 2) ** 2;
+    return 2 * 6371000 * asin(sqrt($a));
+}
+
+// Проверка на местоположението при записване/отписване (ако е включена):
+// устройството трябва да е в зададения радиус около ресторанта.
+function require_geo_check(array $in): void {
+    if (setting('geo_enabled', '0') !== '1') return;
+    $lat = setting('geo_lat');
+    $lng = setting('geo_lng');
+    if ($lat === null || $lat === '' || $lng === null || $lng === '') return; // няма зададена точка — не блокираме
+    if (!isset($in['lat'], $in['lng']) || !is_numeric($in['lat']) || !is_numeric($in['lng'])) {
+        fail('Записването изисква достъп до местоположението. Разрешете го и опитайте пак.');
+    }
+    $radius = max(10, (int)setting('geo_radius', '150'));
+    // компенсираме неточност на GPS до 100 м, за да не блокираме заради слаб сигнал
+    $acc = min(max(0, (float)($in['accuracy'] ?? 0)), 100);
+    $dist = geo_distance_m((float)$lat, (float)$lng, (float)$in['lat'], (float)$in['lng']);
+    if ($dist > $radius + $acc) {
+        fail('Не сте в близост до ресторанта (на около ' . round($dist) . ' м). Записването е позволено само на място.');
+    }
+}
+
 // Смените на един служител не могат да се застъпват: нова смяна може да
 // започне най-рано в момента, в който предишната свършва. Проверява дали
 // интервал [in, out) (out = null → все още отворена) се застъпва с друга смяна.
@@ -243,7 +269,7 @@ case 'employees':
             ? ['name' => $sh['name'], 'abbr' => $sh['abbr'], 'start' => $sh['start_time'], 'end' => $sh['end_time']]
             : null;
     }
-    out($rows);
+    out(['employees' => $rows, 'geo_required' => setting('geo_enabled', '0') === '1']);
 
 case 'my_week':
     // график на служителя за текущата седмица (публично, само активни)
@@ -341,6 +367,7 @@ case 'shift_request_resolve':
     out(['ok' => true]);
 
 case 'clock':
+    require_geo_check($in);
     $empId = (int)($in['employee_id'] ?? 0);
     $st = db()->prepare("SELECT id, name FROM employees WHERE id = ? AND active = 1");
     $st->execute([$empId]);
@@ -792,6 +819,10 @@ case 'get_settings':
         'auto_close_time' => setting('auto_close_time', '01:30'),
         'positions' => positions_list(),
         'recovery_email' => setting('recovery_email', ''),
+        'geo_enabled' => setting('geo_enabled', '0') === '1',
+        'geo_lat' => setting('geo_lat', ''),
+        'geo_lng' => setting('geo_lng', ''),
+        'geo_radius' => (int)setting('geo_radius', '150'),
     ]);
 
 case 'save_settings':
@@ -812,6 +843,26 @@ case 'save_settings':
         $em = trim((string)$in['recovery_email']);
         if ($em !== '' && !filter_var($em, FILTER_VALIDATE_EMAIL)) fail('Невалиден email адрес.');
         set_setting('recovery_email', $em);
+    }
+    if (array_key_exists('geo_enabled', $in)) {
+        set_setting('geo_enabled', !empty($in['geo_enabled']) ? '1' : '0');
+    }
+    if (array_key_exists('geo_lat', $in) && array_key_exists('geo_lng', $in)) {
+        $glat = trim((string)$in['geo_lat']);
+        $glng = trim((string)$in['geo_lng']);
+        if ($glat !== '' || $glng !== '') {
+            if (!is_numeric($glat) || !is_numeric($glng)
+                || abs((float)$glat) > 90 || abs((float)$glng) > 180) {
+                fail('Невалидни координати.');
+            }
+        }
+        set_setting('geo_lat', $glat);
+        set_setting('geo_lng', $glng);
+    }
+    if (array_key_exists('geo_radius', $in)) {
+        $gr = (int)$in['geo_radius'];
+        if ($gr < 10 || $gr > 5000) fail('Радиусът трябва да е между 10 и 5000 метра.');
+        set_setting('geo_radius', (string)$gr);
     }
     if (array_key_exists('positions', $in)) {
         if (!is_array($in['positions'])) fail('Невалидни длъжности.');
@@ -844,6 +895,10 @@ case 'backup':
             'auto_close_enabled' => setting('auto_close_enabled', '1'),
             'auto_close_time' => setting('auto_close_time', '01:30'),
             'positions' => positions_list(),
+            'geo_enabled' => setting('geo_enabled', '0'),
+            'geo_lat' => setting('geo_lat', ''),
+            'geo_lng' => setting('geo_lng', ''),
+            'geo_radius' => setting('geo_radius', '150'),
         ],
     ];
     $tmp = tempnam(sys_get_temp_dir(), 'dhb');
@@ -957,6 +1012,9 @@ case 'restore':
         }
         if (!empty($data['settings']['positions']) && is_array($data['settings']['positions'])) {
             set_setting('positions', json_encode(array_values($data['settings']['positions']), JSON_UNESCAPED_UNICODE));
+        }
+        foreach (['geo_enabled', 'geo_lat', 'geo_lng', 'geo_radius'] as $gk) {
+            if (isset($data['settings'][$gk])) set_setting($gk, (string)$data['settings'][$gk]);
         }
         db()->commit();
     } catch (Exception $ex) {

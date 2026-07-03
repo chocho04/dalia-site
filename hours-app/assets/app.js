@@ -16,6 +16,7 @@ const liveClockEl = document.getElementById('live-clock');
 let currentEmp = null;
 let stream = null;
 let clockTimer = null;
+let geoRequired = false; // проверка на местоположението при записване (настройка)
 
 const ICON_IN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
     stroke-linecap="round" stroke-linejoin="round">
@@ -52,7 +53,9 @@ async function api(action, data, params) {
 async function loadEmployees() {
     listEl.innerHTML = '<p class="loading">Зареждане…</p>';
     try {
-        const employees = await api('employees');
+        const res = await api('employees');
+        const employees = res.employees;
+        geoRequired = !!res.geo_required;
         listEl.innerHTML = '';
         if (!employees.length) {
             listEl.innerHTML = '<p class="loading">Няма добавени служители.</p>';
@@ -200,13 +203,27 @@ function backToList() {
     loadEmployees();
 }
 
+// текуща GPS позиция (изисква се, когато проверката е включена от админ)
+function getPosition() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject(new Error('Устройството няма достъп до местоположение.')); return; }
+        navigator.geolocation.getCurrentPosition(
+            (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+            () => reject(new Error('Разрешете достъп до местоположението, за да се запишете.')),
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+        );
+    });
+}
+
 clockBtn.addEventListener('click', async () => {
     clockBtn.disabled = true;
     resultMsg.hidden = true;
     clockBtn.innerHTML = '<span class="spinner"></span><span>Момент…</span>';
     try {
+        let pos = {};
+        if (geoRequired) pos = await getPosition();
         const photo = capturePhoto();
-        const res = await api('clock', { employee_id: currentEmp.id, photo });
+        const res = await api('clock', { employee_id: currentEmp.id, photo, ...pos });
         resultMsg.className = 'result ok';
         resultMsg.innerHTML = '<span class="check-pop">✓</span>' + (res.status === 'in'
             ? 'Записахте се в ' + fmtTime(res.time)

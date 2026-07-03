@@ -831,6 +831,8 @@ input[type="time"] { cursor: pointer; }
     background: rgba(2, 132, 199, 0.15);
     border-color: var(--accent-light);
 }
+.settings-card .rate-row { display: flex; gap: 8px; }
+.settings-card .rate-row > * { flex: 1; min-width: 0; }
 .settings-card .check-row { display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-primary); }
 .settings-card .check-row input { display: inline-block; width: 18px; height: 18px; margin: 0; padding: 0; flex: none; accent-color: var(--accent); }
 .saved-msg {
