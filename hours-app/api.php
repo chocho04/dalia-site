@@ -886,6 +886,32 @@ case 'save_settings':
     }
     out(['ok' => true]);
 
+// Изтрива файловете на селфита от смени преди повече от 60 дни (бутон в
+// Настройки). Записите и колоните selfie_in/out се запазват — selfie.php
+// показва сив силует на мястото на изтрита снимка.
+case 'cleanup_selfies':
+    require_admin();
+    $st = db()->prepare(
+        "SELECT selfie_in, selfie_out FROM time_entries
+          WHERE clock_in < ? AND (selfie_in IS NOT NULL OR selfie_out IS NOT NULL)"
+    );
+    $st->execute([date('Y-m-d H:i:s', strtotime('-60 days'))]);
+    $deleted = 0;
+    foreach ($st->fetchAll() as $e) {
+        foreach ([$e['selfie_in'], $e['selfie_out']] as $rel) {
+            if ($rel && preg_match('#^[0-9]{6}/[0-9A-Za-z_]+\.jpg$#', $rel)
+                && is_file(__DIR__ . '/selfies/' . $rel)
+                && @unlink(__DIR__ . '/selfies/' . $rel)) {
+                $deleted++;
+            }
+        }
+    }
+    // празните месечни папки се махат, за да не се трупат
+    foreach (glob(__DIR__ . '/selfies/*', GLOB_ONLYDIR) as $dir) {
+        if (!glob($dir . '/*')) @rmdir($dir);
+    }
+    out(['deleted' => $deleted]);
+
 // ---------- Архивиране ----------
 
 case 'backup':

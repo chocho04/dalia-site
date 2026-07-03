@@ -1120,6 +1120,15 @@ async function renderSettings() {
         </div>
 
         <div class="settings-card">
+            <h2>Стари снимки</h2>
+            <p class="muted" style="font-size:.86rem;margin:0 0 14px">
+                Изтрива снимките от смени преди повече от 60 дни, за да освободи място.
+                Записите и часовете се запазват — на мястото на снимката се показва сив силует.
+            </p>
+            <button type="button" class="btn danger" id="sf-cleanup">Изтрий снимките над 60 дни</button>
+        </div>
+
+        <div class="settings-card">
             <h2>Архивиране</h2>
             <p class="muted" style="font-size:.86rem;margin:0 0 14px">
                 Архивът съдържа служителите, всички записи и снимките.
@@ -1200,6 +1209,19 @@ async function renderSettings() {
             });
             savedFlash('pos-saved');
         } catch (err) { alert(err.message); }
+    });
+
+    document.getElementById('sf-cleanup').addEventListener('click', async () => {
+        if (!confirm('Изтриване на всички снимки от смени преди повече от 60 дни?\n\n' +
+                     'Записите и часовете се запазват. Снимките не могат да бъдат възстановени ' +
+                     '(освен от изтеглен архив).')) return;
+        const btn = document.getElementById('sf-cleanup');
+        btn.disabled = true;
+        try {
+            const res = await api('cleanup_selfies', {});
+            alert('Изтрити снимки: ' + res.deleted);
+        } catch (err) { alert(err.message); }
+        btn.disabled = false;
     });
 
     document.getElementById('sf-backup').addEventListener('click', () => {

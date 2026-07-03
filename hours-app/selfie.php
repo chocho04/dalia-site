@@ -3,12 +3,23 @@
 // Аватар (последното селфи на служител, без вход): selfie.php?avatar=<employee_id>
 require_once __DIR__ . '/db.php';
 
+// Сив силует на мястото на изтрита снимка (изчистени стари селфита).
+function serve_placeholder(int $maxAge): void {
+    header('Content-Type: image/svg+xml');
+    header('Cache-Control: private, max-age=' . $maxAge);
+    echo '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">'
+       . '<rect width="96" height="96" fill="#e2e8f0"/>'
+       . '<circle cx="48" cy="38" r="16" fill="#94a3b8"/>'
+       . '<path d="M16 88c4-18 17-26 32-26s28 8 32 26z" fill="#94a3b8"/></svg>';
+    exit;
+}
+
 function serve_jpeg(?string $rel, int $maxAge = 86400): void {
     if (!$rel || !preg_match('#^[0-9]{6}/[0-9A-Za-z_]+\.jpg$#', $rel)) {
         http_response_code(404); exit('Not found');
     }
     $path = __DIR__ . '/selfies/' . $rel;
-    if (!is_file($path)) { http_response_code(404); exit('Not found'); }
+    if (!is_file($path)) serve_placeholder($maxAge);
     header('Content-Type: image/jpeg');
     header('Content-Length: ' . filesize($path));
     header('Cache-Control: private, max-age=' . $maxAge);
