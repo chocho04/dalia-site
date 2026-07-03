@@ -488,6 +488,7 @@ async function renderTimesheets() {
         ${tablesHtml}
         <p class="muted" style="font-size:.85rem;padding-top:20px">
             Кликнете върху клетка за преглед на снимките и редакция на часовете.
+            При дневна / месечна ставка кликът върху празен ден направо добавя смяна (09:00 – 17:00).
             Записите, отбелязани с <span class="edited-mark">•</span>, са коригирани от администратор.
         </p>`;
 
@@ -497,9 +498,22 @@ async function renderTimesheets() {
     document.getElementById('ts-h2').addEventListener('click', () => { tsState.half = 2; renderTimesheets(); });
 
     view.querySelectorAll('td.day-cell').forEach((td) =>
-        td.addEventListener('click', () => {
+        td.addEventListener('click', async () => {
             const emp = data.employees.find((x) => x.id == td.dataset.emp);
             const entries = byEmpDay[td.dataset.emp + '|' + td.dataset.date] || [];
+            // на ден/месец: празен ден се попълва направо с една 8-часова смяна
+            if (emp.rate_unit !== 'hour' && !entries.length) {
+                try {
+                    await api('entry_save', {
+                        id: 0,
+                        employee_id: emp.id,
+                        clock_in: td.dataset.date + ' 09:00:00',
+                        clock_out: td.dataset.date + ' 17:00:00',
+                    });
+                } catch (err) { alert(err.message); return; }
+                renderTimesheets();
+                return;
+            }
             dayModal(emp, td.dataset.date, entries, renderTimesheets);
         }));
 }

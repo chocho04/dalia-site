@@ -386,19 +386,16 @@ th.num { text-align: right; }
 }
 table.timesheet { border-collapse: separate; border-spacing: 0; width: 100%; }
 table.timesheet th, table.timesheet td {
-    border-right: 1px solid rgba(0, 0, 0, 0.04);
     border-bottom: 1px solid rgba(0, 0, 0, 0.04);
     padding: 5px 4px; font-size: .8rem;
     text-align: center; vertical-align: top;
 }
-table.timesheet tr > *:last-child { border-right: none; }
 table.timesheet tbody tr:last-child > * { border-bottom: none; }
 table.timesheet th.emp-col, table.timesheet td.emp-col {
     text-align: left; position: sticky; left: 0;
     background: rgba(248, 250, 252, 0.92);
     backdrop-filter: blur(8px);
     min-width: 176px; padding: 8px 14px; z-index: 1;
-    border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 table.timesheet th.emp-col {
     padding-left: 25px;
