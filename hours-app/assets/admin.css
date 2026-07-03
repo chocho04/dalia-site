@@ -426,11 +426,7 @@ table.timesheet td.day-cell {
     text-align: center;
     transition: background var(--transition-fast);
 }
-td.day-cell:hover { background: var(--accent-glow); }
 td.day-cell.weekend { background: rgba(245, 176, 65, 0.05); }
-td.day-cell.has-entries { background: rgba(5, 150, 105, 0.06); }
-td.day-cell.weekend.has-entries { background: rgba(5, 150, 105, 0.08); }
-td.day-cell:hover, td.day-cell.weekend:hover, td.day-cell.has-entries:hover { background: var(--accent-glow); }
 
 .ts-section {
     margin: 22px 0 10px;
@@ -500,8 +496,6 @@ th.paid-col { text-align: center; }
 /* Редове на служители на дневна/месечна ставка — леко сиво оцветени */
 table.timesheet tr.per-day-row > td { background-color: rgba(100, 116, 139, 0.06); }
 table.timesheet tr.per-day-row > td.emp-col { background-color: rgba(226, 232, 240, 0.92); }
-table.timesheet tr.per-day-row > td.day-cell.has-entries { background-color: rgba(100, 116, 139, 0.12); }
-table.timesheet tr.per-day-row > td.day-cell:hover { background-color: var(--accent-glow); }
 table.data tr.per-day-row td { background-color: rgba(226, 232, 240, 0.8); }
 
 /* Кръгли миниатюри (в модала за деня) */
