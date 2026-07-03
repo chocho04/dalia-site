@@ -755,7 +755,7 @@ async function renderSchedules() {
         <div class="shift-row">
             <div class="shift-info">
                 <strong>${esc(t.name)}${t.abbr ? ` <span class="muted">(${esc(t.abbr)})</span>` : ''}</strong>
-                <span class="muted">${esc(t.start_time)} – ${esc(t.end_time)}</span>
+                <span class="muted">${esc(t.start_time)} – ${esc(t.end_time)}${t.cutoff_time ? ` · авт. в ${esc(t.cutoff_time)}` : ''}</span>
             </div>
             <div class="row-actions">
                 <button class="btn edit" data-sh-edit="${t.id}">Промяна</button>
@@ -875,6 +875,15 @@ function shiftTypeModal(t) {
                 <label>От <input type="time" id="shf-start" value="${t ? t.start_time : '08:00'}" required></label>
                 <label>До <input type="time" id="shf-end" value="${t ? t.end_time : '16:00'}" required></label>
             </div>
+            <label class="check-row">
+                <input type="checkbox" id="shf-ac"${t && t.cutoff_time ? ' checked' : ''}>
+                Автоматично приключване
+            </label>
+            <label>Час на приключване
+                <span class="muted">(забравена отворена смяна се затваря сама в този час)</span>
+                <input type="time" id="shf-cutoff" value="${t && t.cutoff_time ? esc(t.cutoff_time) : '01:30'}"
+                       required ${t && t.cutoff_time ? '' : 'disabled'}>
+            </label>
             <div class="actions">
                 <span class="spacer"></span>
                 <button type="button" class="btn" id="shf-cancel">Отказ</button>
@@ -882,6 +891,9 @@ function shiftTypeModal(t) {
             </div>
         </form>`);
     document.getElementById('shf-cancel').addEventListener('click', closeModal);
+    const shfAc = document.getElementById('shf-ac');
+    const shfCutoff = document.getElementById('shf-cutoff');
+    shfAc.addEventListener('change', () => { shfCutoff.disabled = !shfAc.checked; });
     document.getElementById('shift-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         try {
@@ -891,6 +903,7 @@ function shiftTypeModal(t) {
                 abbr: document.getElementById('shf-abbr').value,
                 start_time: document.getElementById('shf-start').value,
                 end_time: document.getElementById('shf-end').value,
+                cutoff_time: shfAc.checked ? shfCutoff.value : '',
             });
             closeModal();
             renderSchedules();
@@ -1031,7 +1044,7 @@ async function renderReports() {
 
 async function renderSettings() {
     view.innerHTML = '<div class="settings-card"><p class="muted">Зареждане…</p></div>';
-    let s = { auto_close_enabled: true, auto_close_time: '01:30', positions: [] };
+    let s = { positions: [] };
     try { s = await api('get_settings'); } catch (err) { /* показваме подразбиранията */ }
     view.innerHTML = `
         <div class="settings-grid">
@@ -1047,27 +1060,6 @@ async function renderSettings() {
                 </label>
                 <button type="submit" class="btn primary">Запази</button>
                 <span id="pass-saved" class="saved-msg" hidden> ✔ Запазено</span>
-            </form>
-        </div>
-
-        <div class="settings-card">
-            <h2>Автоматично затваряне на смени</h2>
-            <p class="muted" style="font-size:.86rem;margin:0 0 14px">
-                Забравена отворена смяна се затваря сама в първия зададен час след записването
-                (напр. в 01:30 през нощта). Ако е изключено, смените остават отворени,
-                докато не бъдат коригирани ръчно от „Присъствия“.
-            </p>
-            <form id="ac-form">
-                <label class="check-row">
-                    <input type="checkbox" id="sf-ac-enabled" ${s.auto_close_enabled ? 'checked' : ''}>
-                    Автоматично затваряне включено
-                </label>
-                <label>Час на затваряне
-                    <input type="time" id="sf-ac-time" value="${esc(s.auto_close_time)}" required
-                           ${s.auto_close_enabled ? '' : 'disabled'}>
-                </label>
-                <button type="submit" class="btn primary">Запази</button>
-                <span id="ac-saved" class="saved-msg" hidden> ✔ Запазено</span>
             </form>
         </div>
 
@@ -1193,22 +1185,6 @@ async function renderSettings() {
                     .split('\n').map((x) => x.trim()).filter(Boolean),
             });
             savedFlash('pos-saved');
-        } catch (err) { alert(err.message); }
-    });
-
-    const acEnabled = document.getElementById('sf-ac-enabled');
-    const acTime = document.getElementById('sf-ac-time');
-    acEnabled.addEventListener('change', () => { acTime.disabled = !acEnabled.checked; });
-
-    document.getElementById('ac-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            await api('save_settings', {
-                auto_close_enabled: acEnabled.checked ? 1 : 0,
-                // празен час (изчистен при изключена настройка) не се изпраща
-                auto_close_time: acTime.value || undefined,
-            });
-            savedFlash('ac-saved');
         } catch (err) { alert(err.message); }
     });
 

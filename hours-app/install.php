@@ -67,7 +67,8 @@ if (!$installed && $_SERVER['REQUEST_METHOD'] === 'POST') {
             name VARCHAR(100) NOT NULL,
             abbr VARCHAR(10) NOT NULL DEFAULT '',
             start_time VARCHAR(5) NOT NULL,
-            end_time VARCHAR(5) NOT NULL
+            end_time VARCHAR(5) NOT NULL,
+            cutoff_time VARCHAR(5) NOT NULL DEFAULT ''
         )$charset");
 
         db()->exec("CREATE TABLE IF NOT EXISTS schedule (
@@ -89,7 +90,6 @@ if (!$installed && $_SERVER['REQUEST_METHOD'] === 'POST') {
         )$charset");
 
         set_setting('admin_password_hash', password_hash($pass, PASSWORD_DEFAULT));
-        set_setting('auto_close_time', '01:30');
         set_setting('schema_auto_closed', '1');
         set_setting('schema_payments', '1');
         set_setting('schema_schedules', '1');
@@ -98,6 +98,7 @@ if (!$installed && $_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('schema_emp_defaults', '1');
         set_setting('schema_emp_sort', '1');
         set_setting('schema_shift_abbr', '1');
+        set_setting('schema_shift_cutoff', '1');
         $installed = true;
     }
 }

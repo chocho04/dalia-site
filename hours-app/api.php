@@ -178,6 +178,17 @@ function ensure_schema(): void {
         } catch (PDOException $e) { /* колоната съществува */ }
         set_setting('schema_shift_abbr', '1');
     }
+    if (setting('schema_shift_cutoff') !== '1') {
+        try {
+            db()->exec("ALTER TABLE shift_types ADD COLUMN cutoff_time VARCHAR(5) NOT NULL DEFAULT ''");
+        } catch (PDOException $e) { /* колоната съществува */ }
+        // старият универсален час на затваряне се пренася върху съществуващите смени
+        if (setting('auto_close_enabled', '1') === '1') {
+            db()->prepare("UPDATE shift_types SET cutoff_time = ?")
+                ->execute([setting('auto_close_time', '01:30')]);
+        }
+        set_setting('schema_shift_cutoff', '1');
+    }
     if (setting('schema_emp_sort') !== '1') {
         try {
             db()->exec("ALTER TABLE employees ADD COLUMN sort_order INT NOT NULL DEFAULT 0");
@@ -207,22 +218,26 @@ function ensure_schema(): void {
     }
 }
 
-// Автоматично затваря забравени смени: всяка отворена смяна се затваря
-// в първия зададен час (по подр. 01:30), настъпил след записването.
-// Така се обработват и нощните смени (започнати предната вечер).
-// Може да се изключи от Настройки (auto_close_enabled).
+// Автоматично затваря забравени смени: отворена смяна се затваря в часа за
+// автоматично приключване (cutoff_time) на смяната по график за деня на
+// записването — в първото му настъпване след записването, така се обработват
+// и нощните смени. Без график за деня или без зададен час смяната остава
+// отворена, докато не бъде коригирана ръчно от „Присъствия“.
 function auto_close_overdue_shifts(): void {
-    if (setting('auto_close_enabled', '1') !== '1') return;
-    $t = setting('auto_close_time', '01:30');
-    if (!preg_match('/^(\d{1,2}):(\d{2})$/', $t, $m)) { $m = [null, 1, 30]; }
-    $ch = (int)$m[1]; $cm = (int)$m[2];
-    $rows = db()->query("SELECT id, clock_in FROM time_entries WHERE clock_out IS NULL")->fetchAll();
+    $rows = db()->query(
+        "SELECT t.id, t.clock_in, st.cutoff_time
+           FROM time_entries t
+           JOIN schedule s ON s.employee_id = t.employee_id AND s.day = DATE(t.clock_in)
+           JOIN shift_types st ON st.id = s.shift_type_id
+          WHERE t.clock_out IS NULL AND st.cutoff_time <> ''"
+    )->fetchAll();
     if (!$rows) return;
     $now = new DateTime();
     $upd = db()->prepare("UPDATE time_entries SET clock_out = ?, auto_closed = 1 WHERE id = ?");
     foreach ($rows as $e) {
+        if (!preg_match('/^(\d{1,2}):(\d{2})$/', $e['cutoff_time'], $m)) continue;
         $inDt = new DateTime($e['clock_in']);
-        $cutoff = (clone $inDt)->setTime($ch, $cm, 0);
+        $cutoff = (clone $inDt)->setTime((int)$m[1], (int)$m[2], 0);
         if ($cutoff <= $inDt) $cutoff->modify('+1 day');
         if ($now >= $cutoff) {
             $upd->execute([$cutoff->format('Y-m-d H:i:s'), $e['id']]);
@@ -737,13 +752,18 @@ case 'shift_type_save':
         if (!preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $t)) fail('Невалиден час.');
     }
     $abbr = mb_substr(trim((string)($in['abbr'] ?? '')), 0, 10);
+    // празен cutoff = без автоматично приключване за тази смяна
+    $cutoff = trim((string)($in['cutoff_time'] ?? ''));
+    if ($cutoff !== '' && !preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $cutoff)) {
+        fail('Невалиден час за автоматично приключване.');
+    }
     $id = (int)($in['id'] ?? 0);
     if ($id) {
-        db()->prepare("UPDATE shift_types SET name=?, abbr=?, start_time=?, end_time=? WHERE id=?")
-            ->execute([$name, $abbr, $start, $end, $id]);
+        db()->prepare("UPDATE shift_types SET name=?, abbr=?, start_time=?, end_time=?, cutoff_time=? WHERE id=?")
+            ->execute([$name, $abbr, $start, $end, $cutoff, $id]);
     } else {
-        db()->prepare("INSERT INTO shift_types (name, abbr, start_time, end_time) VALUES (?, ?, ?, ?)")
-            ->execute([$name, $abbr, $start, $end]);
+        db()->prepare("INSERT INTO shift_types (name, abbr, start_time, end_time, cutoff_time) VALUES (?, ?, ?, ?, ?)")
+            ->execute([$name, $abbr, $start, $end, $cutoff]);
     }
     out(['ok' => true]);
 
@@ -815,8 +835,6 @@ case 'schedule_set':
 case 'get_settings':
     require_admin();
     out([
-        'auto_close_enabled' => setting('auto_close_enabled', '1') === '1',
-        'auto_close_time' => setting('auto_close_time', '01:30'),
         'positions' => positions_list(),
         'recovery_email' => setting('recovery_email', ''),
         'geo_enabled' => setting('geo_enabled', '0') === '1',
@@ -830,14 +848,6 @@ case 'save_settings':
     if (!empty($in['password'])) {
         if (strlen($in['password']) < 6) fail('Паролата трябва да е поне 6 символа.');
         set_setting('admin_password_hash', password_hash($in['password'], PASSWORD_DEFAULT));
-    }
-    if (array_key_exists('auto_close_enabled', $in)) {
-        set_setting('auto_close_enabled', !empty($in['auto_close_enabled']) ? '1' : '0');
-    }
-    if (array_key_exists('auto_close_time', $in)) {
-        $t = (string)$in['auto_close_time'];
-        if (!preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $t)) fail('Невалиден час за автоматично затваряне.');
-        set_setting('auto_close_time', $t);
     }
     if (array_key_exists('recovery_email', $in)) {
         $em = trim((string)$in['recovery_email']);
@@ -892,8 +902,6 @@ case 'backup':
         'schedule' => db()->query("SELECT * FROM schedule")->fetchAll(),
         // паролата на администратора умишлено НЕ се архивира
         'settings' => [
-            'auto_close_enabled' => setting('auto_close_enabled', '1'),
-            'auto_close_time' => setting('auto_close_time', '01:30'),
             'positions' => positions_list(),
             'geo_enabled' => setting('geo_enabled', '0'),
             'geo_lat' => setting('geo_lat', ''),
@@ -989,10 +997,19 @@ case 'restore':
         db()->exec("DELETE FROM schedule");
         db()->exec("DELETE FROM shift_types");
         if (!empty($data['shift_types']) && is_array($data['shift_types'])) {
-            $insSt = db()->prepare("INSERT INTO shift_types (id, name, abbr, start_time, end_time) VALUES (?, ?, ?, ?, ?)");
+            $insSt = db()->prepare("INSERT INTO shift_types (id, name, abbr, start_time, end_time, cutoff_time) VALUES (?, ?, ?, ?, ?, ?)");
             foreach ($data['shift_types'] as $t) {
                 $insSt->execute([(int)$t['id'], (string)($t['name'] ?? ''), (string)($t['abbr'] ?? ''),
-                                 (string)($t['start_time'] ?? '00:00'), (string)($t['end_time'] ?? '00:00')]);
+                                 (string)($t['start_time'] ?? '00:00'), (string)($t['end_time'] ?? '00:00'),
+                                 (string)($t['cutoff_time'] ?? '')]);
+            }
+            // стари архиви (без cutoff_time): универсалният час на затваряне
+            // от архива се пренася върху всички възстановени смени
+            if (!array_key_exists('cutoff_time', $data['shift_types'][0])
+                && ($data['settings']['auto_close_enabled'] ?? '1') === '1'
+                && !empty($data['settings']['auto_close_time'])) {
+                db()->prepare("UPDATE shift_types SET cutoff_time = ?")
+                    ->execute([(string)$data['settings']['auto_close_time']]);
             }
         }
         if (!empty($data['schedule']) && is_array($data['schedule'])) {
@@ -1003,12 +1020,6 @@ case 'restore':
                                      (string)($sc['note'] ?? '')]);
                 }
             }
-        }
-        if (!empty($data['settings']['auto_close_time'])) {
-            set_setting('auto_close_time', (string)$data['settings']['auto_close_time']);
-        }
-        if (isset($data['settings']['auto_close_enabled'])) {
-            set_setting('auto_close_enabled', $data['settings']['auto_close_enabled'] === '1' ? '1' : '0');
         }
         if (!empty($data['settings']['positions']) && is_array($data['settings']['positions'])) {
             set_setting('positions', json_encode(array_values($data['settings']['positions']), JSON_UNESCAPED_UNICODE));
