@@ -1,0 +1,6 @@
+# Hours app — local/private files
+hours-app/config.php
+hours-app/dev.sqlite
+hours-app/selfies/*
+!hours-app/selfies/.htaccess
+hours-app/.claude/
