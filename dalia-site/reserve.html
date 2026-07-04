@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Резервация — Ресторант Далия</title>
+<meta name="description" content="Запазете си маса в Ресторант Далия — лятна градина, тераса и зала. Резервации на 0894 347 031.">
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sage:#7C8B5F;
+  --sage-deep:#5C6B45;
+  --sage-pale:#DDE2D2;
+  --charcoal:#3F4441;
+  --linen:#EFEEE9;
+  --linen-deep:#E4E3DC;
+  --card:#FAF9F6;
+  --muted:#8A8D86;
+  --sans:'Manrope','Segoe UI',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--linen);color:var(--charcoal);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100svh;display:flex;flex-direction:column}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+.top{display:flex;justify-content:flex-end;max-width:560px;width:100%;margin:0 auto;padding:14px 20px 0}
+.lang-pill{font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--sage-deep);background:transparent;border:1.5px solid var(--sage);border-radius:999px;padding:7px 13px;cursor:pointer;transition:all .2s}
+.lang-pill:hover{background:var(--sage-pale)}
+
+main{width:100%;max-width:560px;margin:0 auto;padding:8px 20px 40px}
+.logo{width:min(260px,64%);margin:10px auto 4px}
+.logo-sub{text-align:center;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--sage-deep);margin-bottom:26px}
+h1{font-size:21px;font-weight:600;text-align:center;margin-bottom:4px}
+.lead{color:#6C6F68;font-size:14.5px;text-align:center;margin-bottom:22px}
+
+.res-card{background:var(--card);border:1px solid var(--linen-deep);border-radius:22px;padding:28px 24px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:#5F635C;margin-bottom:6px}
+.field input,.field select{width:100%;font-family:var(--sans);font-size:16px;color:var(--charcoal);background:#fff;border:1px solid #D8D7CF;border-radius:12px;padding:13px 14px;outline:none;transition:border .2s,box-shadow .2s;appearance:none}
+.field input:focus,.field select:focus{border-color:var(--sage);box-shadow:0 0 0 3px rgba(124,139,95,.18)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sel{position:relative}
+.sel::after{content:'';position:absolute;right:16px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--sans);font-size:15px;font-weight:600;padding:14px 26px;border-radius:999px;border:none;cursor:pointer;transition:transform .15s,background .2s}
+.btn:active{transform:scale(.97)}
+.btn-green{background:var(--sage);color:#F5F4EE}
+.btn-green:hover{background:var(--sage-deep)}
+.res-ok{display:none;background:var(--sage-pale);border-radius:14px;padding:16px 18px;font-size:14.5px;color:var(--sage-deep);margin-top:16px}
+.res-ok.show{display:block}
+.res-ok.err{background:#F7E1DD;border:1px solid #E0B4AC;color:#8E352A}
+.res-ok .sum{font-weight:600;margin-top:6px}
+
+.res-phone{display:flex;align-items:center;justify-content:center;gap:12px;background:var(--sage);color:#F5F4EE;border-radius:18px;padding:14px 20px;margin-top:18px}
+.res-phone .num{font-size:20px;font-weight:600;letter-spacing:.5px}
+.res-phone .lbl{font-size:12.5px;color:var(--sage-pale)}
+
+footer{text-align:center;font-size:13px;color:var(--muted);padding:0 20px 26px;margin-top:auto}
+footer a{color:var(--sage-deep);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <button class="lang-pill" id="langBtn" aria-label="Switch language">EN</button>
+</div>
+
+<main>
+  <img class="logo" src="assets/logo-wordmark.png" alt="Далия">
+  <div class="logo-sub" data-i18n="wm_sub">ресторант и градина</div>
+
+  <h1 data-i18n="res_h2">Запазете си маса</h1>
+  <p class="lead" data-i18n="res_lead">Попълнете заявката и ще ви потвърдим по телефона. За днес и за големи групи — най-бързо е да позвъните.</p>
+
+  <form class="res-card" id="resForm" novalidate>
+    <div class="field">
+      <label for="f-name" data-i18n="f_name">Име</label>
+      <input id="f-name" name="name" type="text" autocomplete="name" placeholder="Вашето име" data-i18n-ph="f_name_ph" required>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-date" data-i18n="f_date">Дата</label>
+        <input id="f-date" name="date" type="date" required>
+      </div>
+      <div class="field">
+        <label for="f-time" data-i18n="f_time">Час</label>
+        <input id="f-time" name="time" type="time" value="19:00" required>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-guests" data-i18n="f_guests">Бр. гости</label>
+        <input id="f-guests" name="guests" type="number" min="1" max="60" value="4" required>
+      </div>
+      <div class="field">
+        <label for="f-hall" data-i18n="f_hall">Зала</label>
+        <div class="sel">
+          <select id="f-hall" name="hall" required>
+            <option value="Градина" data-i18n="hall_1" selected>Градина</option>
+            <option value="Тераса" data-i18n="hall_2">Тераса</option>
+            <option value="Етаж 2" data-i18n="hall_3">Зала Ет.2</option>
+            <option value="Етаж 1" data-i18n="hall_4" disabled>Зала Ет.1</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;width:0;opacity:0">
+    <div class="field">
+      <label for="f-phone" data-i18n="f_phone">Телефон</label>
+      <input id="f-phone" name="phone" type="tel" autocomplete="tel" placeholder="08. ... ..." required>
+    </div>
+    <button class="btn btn-green" type="submit" style="width:100%;justify-content:center" data-i18n="f_submit">Изпрати заявка</button>
+    <div class="res-ok" id="resOk" role="status"></div>
+  </form>
+
+  <a class="res-phone" href="tel:+359894347031">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+    <span><span class="lbl" data-i18n="res_call_lbl">Обадете се на</span><br><span class="num">0894 347 031</span></span>
+  </a>
+</main>
+
+<footer>
+  <a href="/" data-i18n="foot_site">Към сайта на Далия</a> · <span data-i18n="foot_hours_v">Пон. - Петък 10:00 – 24:00</span> · <span data-i18n="foot_hours_v2">Събота 17:00 – 24:00</span>
+</footer>
+
+<script>
+const I18N = {
+  bg: {
+    wm_sub: "ресторант и градина",
+    res_h2: "Запазете си маса",
+    res_lead: "Попълнете заявката и ще ви потвърдим по телефона. За днес и за големи групи — най-бързо е да позвъните.",
+    res_call_lbl: "Обадете се на",
+    f_name: "Име", f_name_ph: "Вашето име", f_date: "Дата", f_time: "Час", f_guests: "Бр. гости",
+    f_hall: "Зала", hall_1: "Градина", hall_2: "Тераса", hall_3: "Зала Ет.2", hall_4: "Зала Ет.1",
+    f_phone: "Телефон", f_submit: "Изпрати заявка",
+    foot_site: "Към сайта на Далия",
+    foot_hours_v: "Пон. - Петък 10:00 – 24:00", foot_hours_v2: "Събота 17:00 – 24:00",
+    ok_html: `Благодарим ви за резервацията, ще се свържем с вас за потвърждение! При въпроси се свържете с нас:
+      <a class="btn btn-green" style="margin-top:12px" href="tel:+359894347031">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+      0894 347 031</a>`,
+    ok_fail: "Онлайн заявката не се изпрати — моля, обадете се, за да запазим масата.",
+    ok_full_html: `<strong>За съжаление сме запълнени.</strong><br>За {date} зона „{hall}“ няма свободни места за онлайн резервации. Опитайте с друга зона или дата, или ни се обадете — възможно е да намерим решение:
+      <a class="btn btn-green" style="margin-top:12px" href="tel:+359894347031">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+      0894 347 031</a>`,
+    ok_confirmed_html: `<strong>✓ Вашата резервация е потвърдена!</strong><br>Очакваме ви на {date} от {time} ч. При промяна или въпрос се обадете:
+      <a class="btn btn-green" style="margin-top:12px" href="tel:+359894347031">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+      0894 347 031</a>`
+  },
+  en: {
+    wm_sub: "restaurant & garden",
+    res_h2: "Book your table",
+    res_lead: "Send us a request and we will confirm by phone. For same-day bookings and large groups, calling is fastest.",
+    res_call_lbl: "Call us on",
+    f_name: "Name", f_name_ph: "Your name", f_date: "Date", f_time: "Time", f_guests: "Guests",
+    f_hall: "Area", hall_1: "Garden", hall_2: "Terrace", hall_3: "Hall, floor 2", hall_4: "Hall, floor 1",
+    f_phone: "Phone", f_submit: "Send request",
+    foot_site: "Visit the Dalia website",
+    foot_hours_v: "Mon - Fri 10:00 – 24:00", foot_hours_v2: "Sat 17:00 – 24:00",
+    ok_html: `Thank you for your reservation, we will contact you to confirm! If you have any questions, call us:
+      <a class="btn btn-green" style="margin-top:12px" href="tel:+359894347031">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+      0894 347 031</a>`,
+    ok_fail: "Your online request was not sent — please call us to book the table.",
+    ok_full_html: `<strong>Unfortunately, we are fully booked.</strong><br>"{hall}" has no online availability for {date}. Try another area or date, or give us a call — we may still find a spot:
+      <a class="btn btn-green" style="margin-top:12px" href="tel:+359894347031">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+      0894 347 031</a>`,
+    ok_confirmed_html: `<strong>✓ Your reservation is confirmed!</strong><br>We look forward to seeing you on {date} at {time}. If anything changes, give us a call:
+      <a class="btn btn-green" style="margin-top:12px" href="tel:+359894347031">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+      0894 347 031</a>`
+  }
+};
+
+let lang = localStorage.getItem('dalia-lang') || 'bg';
+
+const form = document.getElementById('resForm');
+const ok = document.getElementById('resOk');
+
+// Reservations app (reservations.rtdalia.com) — requests from this page land
+// there exactly like the ones from the main site's form.
+const RES_APP_API = 'https://reservations.rtdalia.com/api.php';
+
+// Date picker: default to today, no past dates.
+const fDate = document.getElementById('f-date');
+(function () {
+  const t = new Date();
+  const todayStr = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  fDate.min = todayStr;
+  fDate.value = todayStr;
+})();
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!form.reportValidity()) return;
+  const d = Object.fromEntries(new FormData(form));
+  const L = I18N[lang];
+  const btn = form.querySelector('button[type=submit]');
+  btn.disabled = true;
+  ok.classList.remove('err');
+  ok.innerHTML = L.ok_html;
+  ok.classList.add('show');
+  ok.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+  const dateDisplay = (d.date || '').split('-').reverse().join('.');
+
+  // 1) Register the request in the reservations app.
+  let app = null;
+  try {
+    const ar = await fetch(RES_APP_API + '?action=public_reservation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: d.name,
+        phone: d.phone,
+        date: d.date,
+        time: d.time,
+        partySize: d.guests,
+        hall: d.hall,
+        website: d.website || ''
+      })
+    });
+    const arBody = await ar.json();
+
+    // The hall is at capacity for that date: the request was declined by the
+    // app — tell the guest and skip the email (there is nothing to approve).
+    if (arBody && arBody.code === 'hall_full') {
+      const hallOpt = form.querySelector('#f-hall option:checked');
+      const hallLabel = hallOpt ? hallOpt.textContent : d.hall;
+      ok.innerHTML = L.ok_full_html.replace('{date}', dateDisplay).replace('{hall}', hallLabel);
+      ok.classList.add('err');
+      btn.disabled = false;
+      return;
+    }
+
+    if (ar.ok && arBody && arBody.success && arBody.id) app = arBody;
+  } catch (err) { /* app unreachable — the email below still goes out */ }
+
+  // 2) Email notification. The accept/decline links go through the reservations
+  //    app when it registered the request, so tapping ПРИЕМИ in the email also
+  //    confirms it in the app (then continues to the SMS composer as before).
+  const smsAccept = `https://rtdalia.com/sms.html?p=${encodeURIComponent(d.phone)}&ok=1`;
+  const smsDeny = `https://rtdalia.com/sms.html?p=${encodeURIComponent(d.phone)}&ok=0`;
+  const acceptLink = app && app.approveUrl ? app.approveUrl : smsAccept;
+  const denyLink = app && app.declineUrl ? app.declineUrl : smsDeny;
+
+  // Auto-accepted by the reservations app: tell the guest it's a done deal
+  // instead of the generic "we'll call you to confirm" message.
+  if (app && app.status === 'confirmed') {
+    ok.innerHTML = L.ok_confirmed_html.replace('{date}', dateDisplay).replace('{time}', d.time);
+  }
+  // An auto-approved reservation needs no action from staff: the email leads
+  // with a loud ✅ status (subject + first row) and carries no accept/decline
+  // links. Pending (or app-unreachable) requests keep the links.
+  const autoApproved = app && app.status === 'confirmed';
+  const emailFields = autoApproved
+    ? {
+        _subject: `✅ ПРИЕТА АВТОМАТИЧНО: ${d.name} — ${dateDisplay}, ${d.time} ч., ${d.guests} гости, ${d.hall}`,
+        _template: 'table',
+        _captcha: 'false',
+        '✅ СТАТУС': '✅ ПРИЕТА АВТОМАТИЧНО — РЕЗЕРВАЦИЯТА Е ПОТВЪРДЕНА, НЕ Е НУЖНО ДЕЙСТВИЕ ✅',
+        'Име': d.name,
+        'Дата': dateDisplay,
+        'Час': d.time,
+        'Гости': d.guests,
+        'Зала': d.hall,
+        'Телефон': d.phone
+      }
+    : {
+        _subject: `Резервация: ${d.name} — ${dateDisplay}, ${d.time} ч., ${d.guests} гости, ${d.hall}`,
+        _template: 'table',
+        _captcha: 'false',
+        'Статус': app ? 'Чака потвърждение в приложението' : 'НЕ е записана в приложението — въведете я ръчно!',
+        'Име': d.name,
+        'Дата': dateDisplay,
+        'Час': d.time,
+        'Гости': d.guests,
+        'Зала': d.hall,
+        'Телефон': d.phone,
+        'ПРИЕМИ (докосни от телефона)': acceptLink,
+        'ОТКАЖИ (докосни от телефона)': denyLink
+      };
+
+  let emailOk = false;
+  try {
+    const r = await fetch('https://formsubmit.co/ajax/chochosan044@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(emailFields)
+    });
+    if (!r.ok) throw new Error('formsubmit ' + r.status);
+    const body = await r.json();
+    if (String(body.success) !== 'true') throw new Error(body.message || 'formsubmit rejected');
+    emailOk = true;
+  } catch (err) { /* handled below */ }
+
+  // Only report failure when the request reached neither the app nor the email.
+  if (!app && !emailOk) {
+    ok.insertAdjacentHTML('beforeend', `<div class="sum">${L.ok_fail}</div>`);
+  }
+  btn.disabled = false;
+});
+
+const langBtn = document.getElementById('langBtn');
+function applyLang() {
+  const L = I18N[lang];
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = L[el.dataset.i18n];
+    if (v != null) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = L[el.dataset.i18nPh];
+    if (v != null) el.placeholder = v;
+  });
+  langBtn.textContent = lang === 'bg' ? 'EN' : 'БГ';
+  ok.classList.remove('show');
+}
+langBtn.addEventListener('click', () => {
+  lang = lang === 'bg' ? 'en' : 'bg';
+  localStorage.setItem('dalia-lang', lang);
+  applyLang();
+});
+
+applyLang();
+</script>
+</body>
+</html>
