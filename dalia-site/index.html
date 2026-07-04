@@ -863,28 +863,44 @@ form.addEventListener('submit', async e => {
   if (app && app.status === 'confirmed') {
     ok.innerHTML = L.ok_confirmed_html.replace('{date}', dateDisplay).replace('{time}', d.time);
   }
-  const statusText = app
-    ? (app.status === 'confirmed' ? 'ПРИЕТА АВТОМАТИЧНО (записана в приложението)' : 'Чака потвърждение в приложението')
-    : 'НЕ е записана в приложението — въведете я ръчно!';
-  let emailOk = false;
-  try {
-    const r = await fetch('https://formsubmit.co/ajax/chochosan044@gmail.com', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
+  // An auto-approved reservation needs no action from staff: the email leads
+  // with a loud ✅ status (subject + first row) and carries no accept/decline
+  // links. Pending (or app-unreachable) requests keep the links.
+  const autoApproved = app && app.status === 'confirmed';
+  const emailFields = autoApproved
+    ? {
+        _subject: `✅ ПРИЕТА АВТОМАТИЧНО: ${d.name} — ${dateDisplay}, ${d.time} ч., ${d.guests} гости, ${d.hall}`,
+        _template: 'table',
+        _captcha: 'false',
+        '✅ СТАТУС': '✅ ПРИЕТА АВТОМАТИЧНО — РЕЗЕРВАЦИЯТА Е ПОТВЪРДЕНА, НЕ Е НУЖНО ДЕЙСТВИЕ ✅',
+        'Име': d.name,
+        'Дата': dateDisplay,
+        'Час': d.time,
+        'Гости': d.guests,
+        'Зала': d.hall,
+        'Телефон': d.phone
+      }
+    : {
         _subject: `Резервация: ${d.name} — ${dateDisplay}, ${d.time} ч., ${d.guests} гости, ${d.hall}`,
         _template: 'table',
         _captcha: 'false',
+        'Статус': app ? 'Чака потвърждение в приложението' : 'НЕ е записана в приложението — въведете я ръчно!',
         'Име': d.name,
         'Дата': dateDisplay,
         'Час': d.time,
         'Гости': d.guests,
         'Зала': d.hall,
         'Телефон': d.phone,
-        'Статус': statusText,
         'ПРИЕМИ (докосни от телефона)': acceptLink,
         'ОТКАЖИ (докосни от телефона)': denyLink
-      })
+      };
+
+  let emailOk = false;
+  try {
+    const r = await fetch('https://formsubmit.co/ajax/chochosan044@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(emailFields)
     });
     if (!r.ok) throw new Error('formsubmit ' + r.status);
     const body = await r.json();
