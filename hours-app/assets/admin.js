@@ -6,6 +6,8 @@ const modalEl = document.getElementById('modal');
 
 const MONTHS = ['януари', 'февруари', 'март', 'април', 'май', 'юни',
     'юли', 'август', 'септември', 'октомври', 'ноември', 'декември'];
+const MONTHS_SHORT = ['яну', 'фев', 'мар', 'апр', 'май', 'юни',
+    'юли', 'авг', 'сеп', 'окт', 'ное', 'дек'];
 const DOW = ['нд', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
 const UNITS = { hour: 'на час', day: 'на ден', month: 'на месец' };
 
@@ -163,6 +165,68 @@ document.addEventListener('click', (e) => {
 });
 window.addEventListener('scroll', closeTimePicker, true);
 
+// ---------- Плъзгане на широките таблици ----------
+// Хоризонтално влачене с пръст/мишка и инерция: след пускане списъкът
+// продължава да се плъзга и плавно спира. Вертикалният скрол остава
+// на браузъра (touch-action: pan-y в CSS).
+
+function initSwipeScroll(el) {
+    let startX = 0, startLeft = 0, lastX = 0, lastT = 0, velocity = 0;
+    let dragging = false, moved = false, raf = 0;
+
+    // сянката до колоната с имена се показва само при превъртян списък
+    el.addEventListener('scroll', () => {
+        el.classList.toggle('scrolled', el.scrollLeft > 2);
+    }, { passive: true });
+
+    const glide = () => {
+        if (Math.abs(velocity) < 0.02) return;
+        el.scrollLeft += velocity * 16;
+        velocity *= 0.95;
+        raf = requestAnimationFrame(glide);
+    };
+
+    el.addEventListener('pointerdown', (e) => {
+        cancelAnimationFrame(raf);
+        velocity = 0;
+        moved = false;
+        // с мишка не започваме влачене от полета и бутони (те си имат действия);
+        // с пръст може отвсякъде — обикновено докосване пак ги отваря
+        if (e.pointerType !== 'touch' && e.target.closest('input, select, button, a, img')) return;
+        dragging = true;
+        startX = lastX = e.clientX;
+        startLeft = el.scrollLeft;
+        lastT = performance.now();
+    });
+    el.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        if (!moved && Math.abs(dx) < 5) return;
+        if (!moved) {
+            moved = true;
+            el.classList.add('swiping');
+            try { el.setPointerCapture(e.pointerId); } catch (err) { /* ок */ }
+        }
+        el.scrollLeft = startLeft - dx;
+        const now = performance.now();
+        if (now > lastT) velocity = -(e.clientX - lastX) / (now - lastT); // px/ms
+        lastX = e.clientX;
+        lastT = now;
+    });
+    const end = () => {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove('swiping');
+        if (moved) raf = requestAnimationFrame(glide);
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', () => { dragging = false; el.classList.remove('swiping'); });
+    // след реално влачене кликът под пръста не отваря клетката
+    el.addEventListener('click', (e) => {
+        if (moved) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
+}
+
 // ---------- Табове ----------
 
 const tabs = { people: renderPeople, timesheets: renderTimesheets, schedules: renderSchedules,
@@ -191,18 +255,18 @@ async function renderPeople() {
             <td class="drag-col"><span class="drag-handle" title="Влачете за пренареждане">⠿</span></td>
             <td><div class="emp-cell">${avatarHtml(p)}
                 <span>${esc(p.name)}${p.active == 1 ? '' : ' <em>(неактивен)</em>'}</span></div></td>
-            <td>${esc(p.position)}</td>
+            <td class="col-pos">${esc(p.position)}</td>
             <td class="num">${fmtMoney(p.rate_amount)}${p.rate_unit === 'hour' ? '' : ' ' + (UNITS[p.rate_unit] || '')}</td>
             <td><div class="row-actions">
-                <button class="btn edit" data-edit="${p.id}">Редакция</button>
-                <button class="btn danger" data-del="${p.id}">Изтрий</button>
+                <button class="btn edit" data-edit="${p.id}" title="Редакция"><span class="ico">✎</span><span class="lbl">Редакция</span></button>
+                <button class="btn danger" data-del="${p.id}" title="Изтрий"><span class="ico">✕</span><span class="lbl">Изтрий</span></button>
             </div></td>
         </tr>`;
 
     const tableFor = (list, title) => list.length ? `
         <h3 class="ts-section">${title}</h3>
         <table class="data">
-            <thead><tr><th class="drag-col"></th><th>Име</th><th>Длъжност</th><th class="num">Ставка</th><th></th></tr></thead>
+            <thead><tr><th class="drag-col"></th><th>Име</th><th class="col-pos">Длъжност</th><th class="num">Ставка</th><th></th></tr></thead>
             <tbody>${list.map(rowHtml).join('')}</tbody>
         </table>` : '';
 
@@ -211,7 +275,7 @@ async function renderPeople() {
 
     const tablesHtml = people.length
         ? tableFor(hourly, 'Почасова ставка') + tableFor(salaried, 'Дневна / месечна ставка')
-        : `<table class="data"><thead><tr><th></th><th>Име</th><th>Длъжност</th><th class="num">Ставка</th><th></th></tr></thead>
+        : `<table class="data"><thead><tr><th></th><th>Име</th><th class="col-pos">Длъжност</th><th class="num">Ставка</th><th></th></tr></thead>
            <tbody><tr><td colspan="5" class="muted">Няма служители.</td></tr></tbody></table>`;
 
     view.innerHTML = `
@@ -476,13 +540,12 @@ async function renderTimesheets() {
         : `<div class="ts-scroll"><table class="timesheet"><thead>${head}</thead>
              <tbody><tr><td class="emp-col muted" colspan="${days.length + 1}">Няма активни служители.</td></tr></tbody></table></div>`;
 
-    const monthName = MONTHS[tsState.month] + ' ' + tsState.year;
     view.innerHTML = `
         <div class="toolbar">
             <button class="btn arrow" id="ts-prev">‹</button>
             <button class="btn ${tsState.half === 1 ? 'active' : ''}" id="ts-h1">1 – 15</button>
             <button class="btn ${tsState.half === 2 ? 'active' : ''}" id="ts-h2">16 – ${r.last}</button>
-            <span class="period-label">${monthName}</span>
+            <span class="period-label"><span class="m-full">${MONTHS[tsState.month]}</span><span class="m-short">${MONTHS_SHORT[tsState.month]}</span> ${tsState.year}</span>
             <button class="btn arrow" id="ts-next">›</button>
         </div>
         ${tablesHtml}
@@ -491,6 +554,8 @@ async function renderTimesheets() {
             При дневна / месечна ставка кликът върху празен ден направо добавя смяна (09:00 – 17:00).
             Записите, отбелязани с <span class="edited-mark">•</span>, са коригирани от администратор.
         </p>`;
+
+    view.querySelectorAll('.ts-scroll').forEach(initSwipeScroll);
 
     document.getElementById('ts-prev').addEventListener('click', () => { tsShift(-1); renderTimesheets(); });
     document.getElementById('ts-next').addEventListener('click', () => { tsShift(1); renderTimesheets(); });
@@ -762,8 +827,10 @@ async function renderSchedules() {
         ? gridFor(front, 'Сервитьори / Бармани') + gridFor(rest, 'Кухня')
         : '<p class="muted">Няма активни служители.</p>';
 
-    const label = `${days[0].getDate()} ${MONTHS[days[0].getMonth()]} – ` +
-        `${days[6].getDate()} ${MONTHS[days[6].getMonth()]} ${days[6].getFullYear()}`;
+    const monthSpan = (m) =>
+        `<span class="m-full">${MONTHS[m]}</span><span class="m-short">${MONTHS_SHORT[m]}</span>`;
+    const label = `${days[0].getDate()} ${monthSpan(days[0].getMonth())} – ` +
+        `${days[6].getDate()} ${monthSpan(days[6].getMonth())} ${days[6].getFullYear()}`;
 
     const shiftRow = (t) => `
         <div class="shift-row">
@@ -772,7 +839,7 @@ async function renderSchedules() {
                 <span class="muted">${esc(t.start_time)} – ${esc(t.end_time)}${t.cutoff_time ? ` · авт. в ${esc(t.cutoff_time)}` : ''}</span>
             </div>
             <div class="row-actions">
-                <button class="btn edit" data-sh-edit="${t.id}">Промяна</button>
+                <button class="btn edit" data-sh-edit="${t.id}" title="Промяна"><span class="ico">✎</span><span class="lbl">Промяна</span></button>
                 <button class="btn danger" data-sh-del="${t.id}" title="Изтрий">✕</button>
             </div>
         </div>`;
@@ -788,14 +855,14 @@ async function renderSchedules() {
                 ${gridsHtml}
             </div>
             <div class="sched-side">
-                <div class="settings-card">
-                    <h2>Смени</h2>
+                <div class="settings-card shifts-card">
+                    <h2 id="shifts-toggle">Смени</h2>
                     ${data.shift_types.length
                         ? data.shift_types.map(shiftRow).join('')
                         : '<p class="muted" style="font-size:.86rem">Няма дефинирани смени. Добавете първата.</p>'}
                     <button class="btn primary" id="sh-add" style="margin-top:14px">+ Нова смяна</button>
                 </div>
-                <div class="settings-card" style="margin-top:20px">
+                <div class="settings-card requests-card${data.requests.length ? '' : ' no-req'}">
                     <h2>Заявки за промяна${data.requests.length ? ` <span class="req-badge">${data.requests.length}</span>` : ''}</h2>
                     ${data.requests.length ? data.requests.map((r) => `
                         <div class="req-row">
@@ -814,6 +881,15 @@ async function renderSchedules() {
                 </div>
             </div>
         </div>`;
+
+    view.querySelectorAll('.ts-scroll').forEach(initSwipeScroll);
+
+    // на мобилен изглед панелът "Смени" е свит по подразбиране; заглавието го отваря/затваря
+    const shiftsCard = view.querySelector('.shifts-card');
+    if (window.innerWidth < 700) shiftsCard.classList.add('collapsed');
+    document.getElementById('shifts-toggle').addEventListener('click', () => {
+        if (window.innerWidth < 700) shiftsCard.classList.toggle('collapsed');
+    });
 
     document.getElementById('sc-prev').addEventListener('click', () => {
         schedState.monday = addDays(schedState.monday, -7); renderSchedules();
@@ -970,52 +1046,57 @@ async function renderReports() {
         : '';
 
     // почасова ставка: без "Отработени дни"; дневна/месечна: без "Отработени часове"
+    // на тесен екран: без миниатюри и колона "Ставка", кратки заглавия
+    const mobile = window.innerWidth < 700;
     const tableFor = (list, title, hourly) => {
         if (!list.length) return '';
         const subtotal = list.reduce((s, x) => s + x.amount, 0);
         const rows = list.map((row) => `<tr${hourly ? '' : ' class="per-day-row"'}>
-            <td><div class="emp-cell">${avatarHtml(row)}
+            <td><div class="emp-cell">${mobile ? '' : avatarHtml(row)}
                 <span class="emp-cell-text">${esc(row.name)}<span class="pos">${esc(row.position)}</span></span></div></td>
-            <td>${fmtMoney(row.rate_amount)}${hourly ? '' : ' ' + UNITS[row.rate_unit]}</td>
+            ${mobile ? '' : `<td>${fmtMoney(row.rate_amount)}${hourly ? '' : ' ' + UNITS[row.rate_unit]}</td>`}
             <td class="num">${hourly ? row.hours.toFixed(2) : row.days}</td>
             <td class="num"><strong>${fmtMoney(row.amount)}</strong></td>
             ${paidToggle(row)}
         </tr>`).join('');
         return `
         <h3 class="ts-section">${title}</h3>
-        <table class="data">
+        <table class="data rep-table">
             <thead><tr>
-                <th>Служител</th><th>Ставка</th>
-                <th class="num">${hourly ? 'Отработени часове' : 'Отработени дни'}</th>
-                <th class="num">Сума за плащане</th>
-                ${period ? '<th class="paid-col">Платено</th>' : ''}
+                <th>Служител</th>${mobile ? '' : '<th>Ставка</th>'}
+                <th class="num">${mobile ? (hourly ? 'Часове' : 'Дни') : (hourly ? 'Отработени часове' : 'Отработени дни')}</th>
+                <th class="num">${mobile ? 'Сума' : 'Сума за плащане'}</th>
+                ${period ? `<th class="paid-col">${mobile ? '' : 'Платено'}</th>` : ''}
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr>
-                <th colspan="3" class="num">Общо:</th>
+                <th colspan="${mobile ? 2 : 3}" class="num">Общо:</th>
                 <th class="num">${fmtMoney(subtotal)}</th>
                 ${period ? '<th></th>' : ''}
             </tr></tfoot>
         </table>`;
     };
 
-    const monthName = MONTHS[repState.month] + ' ' + repState.year;
     const periodLabel = repState.mode === 'custom'
         ? `${r.from} — ${r.to}`
-        : monthName;
+        : `<span class="m-full">${MONTHS[repState.month]}</span><span class="m-short">${MONTHS_SHORT[repState.month]}</span> ${repState.year}`;
 
     view.innerHTML = `
-        <div class="toolbar">
-            <button class="btn arrow" id="rep-prev">‹</button>
-            <button class="btn ${repState.mode === 'h1' ? 'active' : ''}" id="rep-h1">1 – 15</button>
-            <button class="btn ${repState.mode === 'h2' ? 'active' : ''}" id="rep-h2">16 – край</button>
-            <button class="btn ${repState.mode === 'month' ? 'active' : ''}" id="rep-month">Целият месец</button>
-            <span class="period-label">${periodLabel}</span>
-            <button class="btn arrow" id="rep-next">›</button>
+        <div class="toolbar rep-toolbar">
+            <div class="rep-nav">
+                <button class="btn arrow" id="rep-prev">‹</button>
+                <button class="btn ${repState.mode === 'h1' ? 'active' : ''}" id="rep-h1">1 – 15</button>
+                <button class="btn ${repState.mode === 'h2' ? 'active' : ''}" id="rep-h2">16 – край</button>
+                <button class="btn ${repState.mode === 'month' ? 'active' : ''}" id="rep-month"><span class="m-full">Целият месец</span><span class="m-short">Месец</span></button>
+                <span class="period-label">${periodLabel}</span>
+                <button class="btn arrow" id="rep-next">›</button>
+            </div>
             <div class="spacer"></div>
-            <input type="date" id="rep-from" class="btn" value="${r.from}">
-            <input type="date" id="rep-to" class="btn" value="${r.to}">
-            <button class="btn" id="rep-custom">Покажи</button>
+            <div class="rep-range">
+                <input type="date" id="rep-from" class="btn" value="${r.from}">
+                <input type="date" id="rep-to" class="btn" value="${r.to}">
+                <button class="btn" id="rep-custom">Покажи</button>
+            </div>
         </div>
         ${data.rows.length
             ? tableFor(hourlyRows, 'Почасова ставка', true) + tableFor(salariedRows, 'Дневна / месечна ставка', false)
@@ -1255,4 +1336,4 @@ async function renderSettings() {
 
 // ---------- Старт ----------
 
-renderPeople();
+renderReports();

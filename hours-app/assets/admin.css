@@ -164,6 +164,8 @@ body {
     -webkit-text-fill-color: transparent;
 }
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Иконите в табовете се показват само на мобилен изглед */
+.tab-ico { display: none; width: 19px; height: 19px; flex-shrink: 0; }
 .tab {
     background: rgba(255, 255, 255, 0.5);
     border: 1px solid var(--glass-border);
@@ -263,6 +265,10 @@ table.data tbody tr.clickable { cursor: pointer; }
 /* ---------- Общи ---------- */
 .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
 .toolbar .spacer { flex: 1; }
+/* групи в лентата на Справки — на десктоп изглеждат като един ред */
+.rep-nav, .rep-range { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* кратките имена на месеци са само за мобилен изглед */
+.m-short { display: none; }
 .toolbar h2 {
     margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.3px;
     background: linear-gradient(to right, #0f172a, #334155);
@@ -338,6 +344,8 @@ table.data thead th {
 }
 table.data th:first-child, table.data td:first-child { padding-left: 28px; }
 .row-actions { display: flex; gap: 8px; justify-content: flex-end; }
+/* Иконите в бутоните Редакция/Изтрий се показват само на мобилен изглед */
+.row-actions .ico { display: none; }
 /* Пренареждане на служители с влачене */
 table.data .drag-col { width: 34px; padding-left: 14px !important; padding-right: 0; }
 .drag-handle {
@@ -377,6 +385,7 @@ th.num { text-align: right; }
 /* ---------- Присъствия ---------- */
 .ts-scroll {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 15px 0;
     background: var(--glass-bg);
     backdrop-filter: blur(16px);
@@ -384,6 +393,8 @@ th.num { text-align: right; }
     border-radius: var(--radius-lg);
     box-shadow: 0 8px 32px 0 var(--glass-shadow);
 }
+/* по време на плъзгане с пръст/мишка не маркираме текст */
+.ts-scroll.swiping { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 table.timesheet { border-collapse: separate; border-spacing: 0; width: 100%; }
 table.timesheet th, table.timesheet td {
     border-bottom: 1px solid rgba(0, 0, 0, 0.04);
@@ -405,6 +416,17 @@ table.timesheet th.emp-col {
     text-align: left;
 }
 table.timesheet td.emp-col { font-weight: 600; font-size: .84rem; padding-left: 25px; }
+/* мека сянка между статичната колона с имена и плъзгащото се съдържание;
+   вижда се само когато списъкът е превъртян настрани */
+table.timesheet th.emp-col::after, table.timesheet td.emp-col::after {
+    content: '';
+    position: absolute; top: 0; right: -16px; bottom: 0; width: 16px;
+    background: linear-gradient(to right, rgba(15, 23, 42, 0.09), transparent);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    pointer-events: none;
+}
+.ts-scroll.scrolled th.emp-col::after, .ts-scroll.scrolled td.emp-col::after { opacity: 1; }
 table.timesheet td.emp-col .pos {
     display: block; font-size: .74rem; font-weight: 400;
     color: var(--text-muted);
@@ -614,7 +636,9 @@ table.data tr.per-day-row td { background-color: rgba(226, 232, 240, 0.8); }
 .sched-grid { flex: 1 1 auto; min-width: 0; }
 .sched-side { flex: 0 0 320px; }
 @media (max-width: 980px) {
-    .sched-layout { flex-direction: column; }
+    /* align-items: stretch — иначе колоните се свиват по съдържанието
+       и таблицата разпъва цялата страница вместо да се плъзга */
+    .sched-layout { flex-direction: column; align-items: stretch; }
     .sched-side { flex: none; width: 100%; margin-top: 0; }
 }
 table.timesheet th.day-col.today { color: var(--accent); }
@@ -624,6 +648,7 @@ table.timesheet th.day-col.today { color: var(--accent); }
 .sched-grid .ts-scroll { padding: 15px; }
 /* дясната колона започва на нивото на лявата таблица (под заглавието на секцията) */
 .sched-side { margin-top: 30px; }
+.sched-side .settings-card + .settings-card { margin-top: 20px; }
 .sched-date { font-size: .89rem; }
 /* компактни клетки, за да се събере цялата седмица без скрол */
 table.timesheet td.sched-cell { padding: 6px 4px; min-width: 0; vertical-align: middle; }
@@ -831,6 +856,86 @@ input[type="time"] { cursor: pointer; }
     border: 1px solid rgba(5, 150, 105, 0.2);
     padding: 5px 10px; border-radius: var(--radius-sm);
     font-weight: 600; font-size: .85rem; margin-left: 8px;
+}
+
+/* ---------- Мобилен изглед ---------- */
+@media (max-width: 700px) {
+    /* Горна лента: ред 1 — лого/заглавие + Изход; ред 2 — табове само с икони */
+    .topbar { gap: 12px; margin-top: 12px; width: calc(100% - 20px); padding: 10px 12px; }
+    .brand-section { gap: 10px; }
+    .topbar h1 { font-size: 1.05rem; }
+    .logo-icon { width: 38px; height: 38px; }
+    .tabs { order: 3; width: 100%; gap: 6px; flex-wrap: nowrap; }
+    .tab { flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px 0; }
+    .tab-ico { display: block; }
+    .tab .tab-label { display: none; }
+
+    #view { padding: 16px 12px 48px; }
+
+    /* Хора: без длъжност и дръжка за влачене; бутоните само с икони */
+    table.data .col-pos, table.data .drag-col { display: none; }
+    table.data th, table.data td { padding: 10px 10px; }
+    table.data th:first-child, table.data td:first-child { padding-left: 14px; }
+    .row-actions { gap: 6px; }
+    .row-actions .lbl { display: none; }
+    .row-actions .ico { display: block; }
+    .row-actions .btn { width: 36px; height: 36px; padding: 0; flex-shrink: 0; }
+
+    /* Присъствия и Графици: таблиците от край до край, плъзгане с пръст */
+    .ts-scroll {
+        margin-left: -12px; margin-right: -12px;
+        border-radius: 0; border-left: none; border-right: none;
+        touch-action: pan-y;
+        overscroll-behavior-x: contain;
+    }
+    .sched-grid .ts-scroll { padding: 15px 0; }
+
+    /* Колоната "Служител" се свива до съдържанието */
+    table.timesheet th.emp-col, table.timesheet td.emp-col,
+    .sched-grid table.timesheet th.emp-col, .sched-grid table.timesheet td.emp-col {
+        min-width: 0;
+        padding-left: 14px; padding-right: 8px;
+    }
+
+    /* Графици: заявките най-отгоре (без заглавие), панелът "Смени" — свит */
+    .sched-side { display: contents; }
+    .requests-card { order: -1; }
+    .requests-card > h2 { display: none; }
+    .requests-card.no-req { display: none; }
+    .requests-card .req-row:first-child { padding-top: 0; }
+    .requests-card .req-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .shifts-card h2 { cursor: pointer; position: relative; user-select: none; }
+    .shifts-card h2::after {
+        content: '▾'; position: absolute; right: 0; top: 0;
+        color: var(--text-muted); font-size: 1rem;
+    }
+    .shifts-card.collapsed h2::after { content: '▸'; }
+    .shifts-card.collapsed > :not(h2) { display: none; }
+    .shifts-card.collapsed h2 { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+    /* Лентата с периоди — компактна, на един ред, по цялата ширина;
+       всички бутони и стрелки с еднаква височина */
+    .toolbar { gap: 5px; justify-content: space-between; }
+    .toolbar .spacer { display: none; }
+    .toolbar .btn { padding: 6px 9px; height: 34px; font-size: .78rem; white-space: nowrap; }
+    .toolbar .btn.arrow { width: 32px; height: 34px; padding: 0; font-size: 1rem; flex-shrink: 0; }
+    .period-label { font-size: .8rem; padding: 0 2px; }
+    .m-full { display: none; }
+    .m-short { display: inline; }
+
+    /* Справки: навигацията на ред 1, периодът по избор на ред 2 */
+    .rep-nav { width: 100%; gap: 5px; flex-wrap: nowrap; justify-content: space-between; }
+    .rep-nav .period-label {
+        flex-shrink: 1; min-width: 0;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .rep-range { width: 100%; gap: 6px; }
+    .rep-range input[type="date"] { flex: 1; min-width: 0; padding: 6px 12px; }
+    .rep-range button { flex-shrink: 0; }
+
+    /* Справки: колоната "Платено" — без заглавие, по-малки отметки */
+    .paid-col { width: 40px; padding-left: 4px; padding-right: 10px; }
+    .paid-toggle { width: 26px; height: 26px; font-size: .78rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

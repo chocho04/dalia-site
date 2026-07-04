@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/auth.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -9,7 +10,7 @@ $in = json_decode(file_get_contents('php://input'), true) ?: [];
 
 function out($data) { echo json_encode($data, JSON_UNESCAPED_UNICODE); exit; }
 function fail($msg, $code = 400) { http_response_code($code); out(['error' => $msg]); }
-function require_admin() { if (empty($_SESSION['admin'])) fail('Не сте влезли.', 401); }
+function require_admin() { if (empty($_SESSION['admin']) && !remember_try()) fail('Не сте влезли.', 401); }
 
 function valid_dt(?string $s): ?string {
     if ($s === null || $s === '') return null;
@@ -419,6 +420,7 @@ case 'login':
     if ($hash && password_verify($in['password'] ?? '', $hash)) {
         session_regenerate_id(true);
         $_SESSION['admin'] = true;
+        remember_issue(); // запомня устройството — без вход всеки път
         out(['ok' => true]);
     }
     fail('Грешна парола.', 401);
@@ -457,10 +459,12 @@ case 'reset_password':
     set_setting('admin_password_hash', password_hash($pass, PASSWORD_DEFAULT));
     set_setting('reset_token_hash', '');
     set_setting('reset_token_expires', '');
+    remember_store([]); // отписва всички запомнени устройства
     out(['ok' => true]);
 
 case 'logout':
     require_admin();
+    remember_forget();
     session_destroy();
     out(['ok' => true]);
 
@@ -848,6 +852,9 @@ case 'save_settings':
     if (!empty($in['password'])) {
         if (strlen($in['password']) < 6) fail('Паролата трябва да е поне 6 символа.');
         set_setting('admin_password_hash', password_hash($in['password'], PASSWORD_DEFAULT));
+        // нова парола отписва всички запомнени устройства; текущото остава
+        remember_store([]);
+        remember_issue();
     }
     if (array_key_exists('recovery_email', $in)) {
         $em = trim((string)$in['recovery_email']);
