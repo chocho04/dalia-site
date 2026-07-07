@@ -936,6 +936,37 @@ input[type="time"] { cursor: pointer; }
     /* Справки: колоната "Платено" — без заглавие, по-малки отметки */
     .paid-col { width: 40px; padding-left: 4px; padding-right: 10px; }
     .paid-toggle { width: 26px; height: 26px; font-size: .78rem; }
+
+    /* Модал за деня: вход и изход на отделни редове, по-едри полета.
+       Изтриването се измества в дясна лента, за да не свива полетата. */
+    .modal.wide { padding: 20px 18px; }
+    .day-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        position: relative;
+        padding: 14px 44px 14px 0;
+    }
+    .day-row .row-part { width: 100%; flex: none; }
+    .day-row input[type="time"] {
+        padding: 12px 14px;
+        font-size: 1rem;              /* ≥16px спира авт. мащабиране в iOS */
+    }
+    .day-row .row-sep {
+        align-self: flex-start;
+        transform: rotate(90deg);     /* → сочи надолу между двата реда */
+        margin: 2px 0 2px 14px;
+    }
+    .day-row .row-del {
+        position: absolute;
+        top: 50%; right: 0;
+        transform: translateY(-50%);
+        width: 38px; height: 38px;
+    }
+
+    /* Бутоните в модала — на един ред, без пренасяне на текста */
+    .modal .actions { gap: 6px; }
+    .modal .actions .btn { padding: 10px 12px; font-size: .85rem; white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {

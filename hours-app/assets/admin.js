@@ -227,6 +227,18 @@ function initSwipeScroll(el) {
     }, true);
 }
 
+// На тесен екран плъзва списъка така, че днешната колона да е видима
+// веднага след замразената колона с имената (иначе тя често е извън екрана).
+function scrollToToday(el) {
+    if (window.innerWidth > 700) return;
+    const cell = el.querySelector('.today');
+    if (!cell) return;
+    const empCol = el.querySelector('.emp-col');
+    const frozen = empCol ? empCol.getBoundingClientRect().width : 0;
+    const shift = cell.getBoundingClientRect().left - el.getBoundingClientRect().left - frozen - 8;
+    if (shift > 0) el.scrollLeft += shift;
+}
+
 // ---------- Табове ----------
 
 const tabs = { people: renderPeople, timesheets: renderTimesheets, schedules: renderSchedules,
@@ -501,7 +513,7 @@ async function renderTimesheets() {
     for (const d of days) {
         const date = new Date(tsState.year, tsState.month, d);
         const wd = date.getDay();
-        head += `<th class="day-col${wd === 0 || wd === 6 ? ' weekend' : ''}">${d}<br><span class="muted">${DOW[wd]}</span></th>`;
+        head += `<th class="day-col${wd === 0 || wd === 6 ? ' weekend' : ''}${ymd(date) === todayStr ? ' today' : ''}">${d}<br><span class="muted">${DOW[wd]}</span></th>`;
     }
     head += '</tr>';
 
@@ -518,7 +530,7 @@ async function renderTimesheets() {
                 // при посочване с мишката: начален – краен час на смените
                 const times = entries.map((e) =>
                     timeOf(e.clock_in) + ' – ' + (e.clock_out ? timeOf(e.clock_out) : 'на смяна')).join(', ');
-                body += `<td class="day-cell${wd === 0 || wd === 6 ? ' weekend' : ''}${entries.length ? ' has-entries' : ''}"
+                body += `<td class="day-cell${wd === 0 || wd === 6 ? ' weekend' : ''}${dateStr === todayStr ? ' today' : ''}${entries.length ? ' has-entries' : ''}"
                              data-emp="${emp.id}" data-date="${dateStr}"${times ? ` title="${times}"` : ''}>${dayCellHtml(emp, entries, dateStr, todayStr)}</td>`;
             }
             body += '</tr>';
@@ -556,6 +568,7 @@ async function renderTimesheets() {
         </p>`;
 
     view.querySelectorAll('.ts-scroll').forEach(initSwipeScroll);
+    view.querySelectorAll('.ts-scroll').forEach(scrollToToday);
 
     document.getElementById('ts-prev').addEventListener('click', () => { tsShift(-1); renderTimesheets(); });
     document.getElementById('ts-next').addEventListener('click', () => { tsShift(1); renderTimesheets(); });
@@ -883,6 +896,7 @@ async function renderSchedules() {
         </div>`;
 
     view.querySelectorAll('.ts-scroll').forEach(initSwipeScroll);
+    view.querySelectorAll('.ts-scroll').forEach(scrollToToday);
 
     // на мобилен изглед панелът "Смени" е свит по подразбиране; заглавието го отваря/затваря
     const shiftsCard = view.querySelector('.shifts-card');
