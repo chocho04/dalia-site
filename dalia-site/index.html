@@ -324,7 +324,9 @@ footer a:hover{color:#fff}
         </div>
         <div class="field">
           <label for="f-time" data-i18n="f_time">Час</label>
-          <input id="f-time" name="time" type="time" value="19:00" step="1800" required>
+          <div class="sel">
+            <select id="f-time" name="time" required></select>
+          </div>
         </div>
       </div>
       <div class="field-row">
@@ -804,14 +806,13 @@ const fDate = document.getElementById('f-date');
   fDate.value = todayStr;
 })();
 
-// Time picker: only 30-minute intervals — snap whatever was entered.
+// Time: 30-minute slots within opening hours (10:00–23:30).
 const fTime = document.getElementById('f-time');
-fTime.addEventListener('change', () => {
-  if (!fTime.value) return;
-  const [h, m] = fTime.value.split(':').map(Number);
-  const snapped = (Math.round((h * 60 + m) / 30) * 30) % 1440;
-  fTime.value = String(Math.floor(snapped / 60)).padStart(2, '0') + ':' + String(snapped % 60).padStart(2, '0');
-});
+for (let m = 10 * 60; m <= 23 * 60 + 30; m += 30) {
+  const v = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  fTime.add(new Option(v, v));
+}
+fTime.value = '19:00';
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
