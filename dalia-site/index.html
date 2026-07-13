@@ -166,6 +166,25 @@ footer a:hover{color:#fff}
 .lb-x{position:absolute;top:16px;right:16px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(245,244,238,.14);color:#F5F4EE;font-size:22px;line-height:1;cursor:pointer;transition:background .2s}
 .lb-x:hover{background:rgba(245,244,238,.28)}
 
+.lm{position:fixed;inset:0;z-index:100;background:rgba(27,30,26,.6);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s}
+.lm.open{opacity:1;pointer-events:auto}
+.lm-card{background:var(--card);border-radius:22px;width:100%;max-width:500px;max-height:86svh;overflow-y:auto;padding:24px;box-shadow:0 24px 60px rgba(27,30,26,.35)}
+.lm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.lm-head h3{font-family:var(--script);font-weight:400;font-size:36px;line-height:1.1}
+.lm-date{font-size:13px;color:var(--muted);margin-top:2px}
+.lm-x{flex:none;width:38px;height:38px;border-radius:50%;border:none;background:var(--linen-deep);color:var(--charcoal);font-size:20px;line-height:1;cursor:pointer;transition:background .2s}
+.lm-x:hover{background:var(--sage-pale)}
+.lm-intro{background:var(--sage-pale);color:var(--sage-deep);border-radius:12px;padding:10px 14px;font-size:13.5px;font-weight:600;margin-top:14px}
+.lm-sec{margin-top:18px}
+.lm-sec h4{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--sage);margin-bottom:4px}
+.lm-item{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--linen-deep);font-size:14.5px}
+.lm-item:last-child{border-bottom:none}
+.lm-item .nm{font-weight:600}
+.lm-item .gr{color:var(--muted);font-weight:400;font-size:12.5px;margin-left:6px;white-space:nowrap}
+.lm-item .pr{flex:none;text-align:right;color:var(--sage-deep);font-weight:600;font-size:13.5px;white-space:nowrap}
+.lm-extra{margin-top:20px;border-top:1px solid var(--linen-deep);padding-top:14px;white-space:pre-wrap;font-size:13.5px;line-height:1.6;color:#6C6F68}
+.lm-note{padding:26px 0 10px;text-align:center;color:var(--muted);font-size:14.5px}
+
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.menu-track,.lb{transition:none}.menu-bg i{animation:none}}
 </style>
 </head>
@@ -204,6 +223,7 @@ footer a:hover{color:#fff}
     <div class="tag" data-i18n="hero_tag">Ресторант и градина</div>
     <p data-i18n="hero_p">Свежа кухня, уютна лятна градина и детски кът — мястото за дълги обеди, вечери с приятели и семейни празници.</p>
     <div class="hero-cta">
+      <button class="btn btn-green" type="button" id="lunchBtn" data-i18n="hero_cta_lunch">Обедно меню</button>
       <a class="btn btn-solid" href="#reservation" data-i18n="hero_cta1">Резервирай маса</a>
       <a class="btn btn-ghost" href="#menu" data-i18n="hero_cta2">Виж менюто</a>
     </div>
@@ -395,6 +415,19 @@ footer a:hover{color:#fff}
   <figure id="lbBody"></figure>
 </div>
 
+<div class="lm" id="lm" role="dialog" aria-modal="true" aria-label="Обедно меню">
+  <div class="lm-card">
+    <div class="lm-head">
+      <div>
+        <h3 data-i18n="lunch_title">Обедно меню</h3>
+        <div class="lm-date" id="lmDate"></div>
+      </div>
+      <button class="lm-x" id="lmX" aria-label="Затвори">&times;</button>
+    </div>
+    <div id="lmBody"></div>
+  </div>
+</div>
+
 <script>
 const I18N = {
   bg: {
@@ -402,7 +435,10 @@ const I18N = {
     nav_menu: "Меню", nav_place: "Мястото", nav_res: "Резервация",
     hero_tag: "Ресторант и градина",
     hero_p: "Свежа кухня, уютна лятна градина и детски кът — мястото за дълги обеди, вечери с приятели и семейни празници.",
-    hero_cta1: "Резервирай маса", hero_cta2: "Виж менюто",
+    hero_cta1: "Резервирай маса", hero_cta2: "Виж менюто", hero_cta_lunch: "Обедно меню",
+    lunch_title: "Обедно меню", lunch_dishes: "Готвени ястия", lunch_soups: "Супи",
+    lunch_loading: "Зареждаме менюто…",
+    lunch_err: "Менюто не се зареди — обадете ни се на 0894 347 031.",
     menu_kicker: "Меню", menu_h2: "Нашето меню",
     menu_lead: "Сезонни салати, домашни предястия, бавно готвени основни и прясна риба — плъзнете настрани, за да разлистите менюто.",
     swipe_hint: "плъзни настрани",
@@ -441,7 +477,10 @@ const I18N = {
     nav_menu: "Menu", nav_place: "The place", nav_res: "Reservations",
     hero_tag: "Restaurant & garden",
     hero_p: "Fresh cooking, a cosy summer garden and a kids corner — the place for long lunches, dinners with friends and family celebrations.",
-    hero_cta1: "Book a table", hero_cta2: "See the menu",
+    hero_cta1: "Book a table", hero_cta2: "See the menu", hero_cta_lunch: "Lunch menu",
+    lunch_title: "Lunch menu", lunch_dishes: "Cooked dishes", lunch_soups: "Soups",
+    lunch_loading: "Loading the menu…",
+    lunch_err: "The menu could not be loaded — call us on 0894 347 031.",
     menu_kicker: "Menu", menu_h2: "What we cook",
     menu_lead: "Seasonal salads, homemade starters, slow-cooked mains and fresh fish — swipe sideways to leaf through the menu.",
     swipe_hint: "swipe sideways",
@@ -778,6 +817,61 @@ document.querySelectorAll('.tile').forEach(t => {
   });
 });
 
+// Lunch menu modal — today's menu comes from the menu app on apps.rtdalia.com
+// (public read-only endpoint; the same data feeds the print/Facebook flow).
+const LUNCH_API = 'https://apps.rtdalia.com/menu/api.php?action=public_menu';
+const lm = document.getElementById('lm');
+const lmBody = document.getElementById('lmBody');
+const lmDate = document.getElementById('lmDate');
+let lunchData = null;
+
+const DAY_EN = { 'Понеделник': 'Monday', 'Вторник': 'Tuesday', 'Сряда': 'Wednesday', 'Четвъртък': 'Thursday', 'Петък': 'Friday', 'Събота': 'Saturday', 'Неделя': 'Sunday' };
+const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function renderLunch() {
+  const L = I18N[lang];
+  if (!lunchData) {
+    lmDate.textContent = '';
+    lmBody.innerHTML = `<div class="lm-note">${L.lunch_err}</div>`;
+    return;
+  }
+  const d = lunchData;
+  const day = lang === 'en' ? (DAY_EN[d.day] || d.day) : d.day;
+  lmDate.textContent = d.date + (day ? ' · ' + day : '');
+  const grams = g => g + (lang === 'en' ? ' g' : ' гр.');
+  const price = eur => eur.toFixed(2) + ' € / ' + (eur * d.eur_bgn).toFixed(2) + ' лв.';
+  const item = (name, g, eur) => `<div class="lm-item"><span class="nm">${escHtml(name)}<span class="gr">${grams(g)}</span></span><span class="pr">${price(eur)}</span></div>`;
+  let html = '';
+  if (d.intro) html += `<div class="lm-intro">${escHtml(d.intro)}</div>`;
+  if (d.dishes.length) html += `<div class="lm-sec"><h4>${L.lunch_dishes}</h4>${d.dishes.map(x => item(x.name, d.dish_grams, d.dish_price_eur)).join('')}</div>`;
+  if (d.soups.length) html += `<div class="lm-sec"><h4>${L.lunch_soups}</h4>${d.soups.map(x => item(x.name, d.soup_grams, x.price)).join('')}</div>`;
+  if (d.outro) html += `<div class="lm-extra">${escHtml(d.outro)}</div>`;
+  lmBody.innerHTML = html;
+}
+async function openLunch() {
+  lm.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('lmX').focus();
+  if (lunchData) { renderLunch(); return; }
+  lmDate.textContent = '';
+  lmBody.innerHTML = `<div class="lm-note">${I18N[lang].lunch_loading}</div>`;
+  try {
+    const r = await fetch(LUNCH_API);
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error('bad response');
+    lunchData = j;
+  } catch (err) { lunchData = null; }
+  renderLunch();
+}
+function closeLunch() {
+  lm.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('lunchBtn').addEventListener('click', openLunch);
+document.getElementById('lmX').addEventListener('click', closeLunch);
+lm.addEventListener('click', e => { if (e.target === lm) closeLunch(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && lm.classList.contains('open')) closeLunch(); });
+
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (reduceMotion) {
   document.querySelector('.hero-vid').pause();
@@ -940,6 +1034,7 @@ function applyLang() {
   langBtn.textContent = lang === 'bg' ? 'EN' : 'БГ';
   ok.classList.remove('show');
   buildMenu();
+  if (lm.classList.contains('open')) renderLunch();
 }
 langBtn.addEventListener('click', () => {
   lang = lang === 'bg' ? 'en' : 'bg';
