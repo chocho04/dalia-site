@@ -223,7 +223,7 @@ footer a:hover{color:#fff}
     <div class="tag" data-i18n="hero_tag">Ресторант и градина</div>
     <p data-i18n="hero_p">Свежа кухня, уютна лятна градина и детски кът — мястото за дълги обеди, вечери с приятели и семейни празници.</p>
     <div class="hero-cta">
-      <button class="btn btn-green" type="button" id="lunchBtn" data-i18n="hero_cta_lunch">Обедно меню</button>
+      <button class="btn btn-green" type="button" id="lunchBtn" data-i18n="hero_cta_lunch" style="display:none">Обедно меню</button>
       <a class="btn btn-solid" href="#reservation" data-i18n="hero_cta1">Резервирай маса</a>
       <a class="btn btn-ghost" href="#menu" data-i18n="hero_cta2">Виж менюто</a>
     </div>
@@ -437,7 +437,6 @@ const I18N = {
     hero_p: "Свежа кухня, уютна лятна градина и детски кът — мястото за дълги обеди, вечери с приятели и семейни празници.",
     hero_cta1: "Резервирай маса", hero_cta2: "Виж менюто", hero_cta_lunch: "Обедно меню",
     lunch_title: "Обедно меню", lunch_dishes: "Готвени ястия", lunch_soups: "Супи",
-    lunch_loading: "Зареждаме менюто…",
     lunch_err: "Менюто не се зареди — обадете ни се на 0894 347 031.",
     menu_kicker: "Меню", menu_h2: "Нашето меню",
     menu_lead: "Сезонни салати, домашни предястия, бавно готвени основни и прясна риба — плъзнете настрани, за да разлистите менюто.",
@@ -479,7 +478,6 @@ const I18N = {
     hero_p: "Fresh cooking, a cosy summer garden and a kids corner — the place for long lunches, dinners with friends and family celebrations.",
     hero_cta1: "Book a table", hero_cta2: "See the menu", hero_cta_lunch: "Lunch menu",
     lunch_title: "Lunch menu", lunch_dishes: "Cooked dishes", lunch_soups: "Soups",
-    lunch_loading: "Loading the menu…",
     lunch_err: "The menu could not be loaded — call us on 0894 347 031.",
     menu_kicker: "Menu", menu_h2: "What we cook",
     menu_lead: "Seasonal salads, homemade starters, slow-cooked mains and fresh fish — swipe sideways to leaf through the menu.",
@@ -848,21 +846,26 @@ function renderLunch() {
   if (d.outro) html += `<div class="lm-extra">${escHtml(d.outro)}</div>`;
   lmBody.innerHTML = html;
 }
-async function openLunch() {
+function openLunch() {
   lm.classList.add('open');
   document.body.style.overflow = 'hidden';
   document.getElementById('lmX').focus();
-  if (lunchData) { renderLunch(); return; }
-  lmDate.textContent = '';
-  lmBody.innerHTML = `<div class="lm-note">${I18N[lang].lunch_loading}</div>`;
+  renderLunch();
+}
+// The button only appears when the menu app has a post for today's date.
+(async () => {
   try {
     const r = await fetch(LUNCH_API);
     const j = await r.json();
-    if (!r.ok || !j.ok) throw new Error('bad response');
-    lunchData = j;
-  } catch (err) { lunchData = null; }
-  renderLunch();
-}
+    if (!r.ok || !j.ok) return;
+    const t = new Date();
+    const today = String(t.getDate()).padStart(2, '0') + '.' + String(t.getMonth() + 1).padStart(2, '0');
+    if (j.date === today) {
+      lunchData = j;
+      document.getElementById('lunchBtn').style.display = '';
+    }
+  } catch (err) { /* no menu — button stays hidden */ }
+})();
 function closeLunch() {
   lm.classList.remove('open');
   document.body.style.overflow = '';
