@@ -81,8 +81,7 @@ h2{font-family:var(--script);font-weight:400;font-size:clamp(42px,9vw,60px);line
 .menu-bgs{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;-webkit-mask-image:linear-gradient(180deg,transparent,#000 13%,#000 87%,transparent);mask-image:linear-gradient(180deg,transparent,#000 13%,#000 87%,transparent)}
 .menu-bg{position:absolute;inset:0;opacity:0;transition:opacity 1.1s ease}
 .menu-bg.on{opacity:1}
-.menu-bg i{position:absolute;inset:-14%;display:block;animation:bgdrift 22s ease-in-out infinite alternate}
-@keyframes bgdrift{from{transform:translate3d(-1.5%,-1%,0) scale(1)}to{transform:translate3d(1.5%,1.5%,0) scale(1.08)}}
+.menu-bg i{position:absolute;inset:-14%;display:block}
 
 .chips{display:flex;gap:8px;overflow-x:auto;padding:26px 20px 4px;max-width:1100px;margin:0 auto;scrollbar-width:none;-ms-overflow-style:none;cursor:grab}
 .chips::-webkit-scrollbar{display:none}
@@ -185,7 +184,7 @@ footer a:hover{color:#fff}
 .lm-extra{margin-top:20px;border-top:1px solid var(--linen-deep);padding-top:14px;white-space:pre-wrap;font-size:13.5px;line-height:1.6;color:#6C6F68}
 .lm-note{padding:26px 0 10px;text-align:center;color:var(--muted);font-size:14.5px}
 
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.menu-track,.lb{transition:none}.menu-bg i{animation:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.menu-track,.lb{transition:none}}
 </style>
 </head>
 <body>
