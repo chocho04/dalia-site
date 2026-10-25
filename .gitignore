@@ -1,0 +1,4 @@
+# Mail assistant — local/private files
+mail-assistant/config.php
+mail-assistant/data/*
+!mail-assistant/data/.htaccess
