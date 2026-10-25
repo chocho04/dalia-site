@@ -108,7 +108,10 @@ function Send-Http($client, [string]$method, [string]$url, $content, $headers) {
     if ($headers) { foreach ($k in $headers.Keys) { [void]$req.Headers.TryAddWithoutValidation($k, [string]$headers[$k]) } }
     if ($content) { $req.Content = $content }
     $resp = $client.SendAsync($req).GetAwaiter().GetResult()
-    $body = $resp.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+    # Decoded by hand: cPanel sends charset="utf-8" with quotes, which
+    # ReadAsStringAsync on .NET Framework (Windows PowerShell 5.1) rejects.
+    $bytes = $resp.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult()
+    $body = [Text.Encoding]::UTF8.GetString($bytes)
     return [pscustomobject]@{ Code = [int]$resp.StatusCode; Body = $body }
 }
 
