@@ -1,15 +1,16 @@
 ﻿<#
-  Инсталира или обновява „Фактури от пощата“ на хостинга (cPanel).
+  Installs or updates the mail assistant ("Фактури от пощата") on the cPanel hosting.
 
-  Стартиране: двоен клик върху deploy.cmd
-          или: powershell -ExecutionPolicy Bypass -File deploy.ps1
+  Run: double-click deploy.cmd
+   or: powershell -ExecutionPolicy Bypass -File deploy.ps1
 
-  Сам прави: субдомейн, SSL, PHP версия, качване на файловете, config.php,
-  проверка на пощата и на docs.rtdalia.com, cron задача. Пита само за данните
-  за вход. Може да се пуска многократно — следващия път само обновява файловете
-  (с -Reconfigure пита отново за пощата и PIN-а).
+  Does on its own: subdomain, SSL, PHP version, file upload, config.php, mail
+  and docs.rtdalia.com checks, cron job. Only asks for credentials. Safe to
+  re-run: next time it just updates the files (-Reconfigure asks for the mail
+  and PIN again).
 
-  Работи с Windows PowerShell 5.1 (вграден в Windows 10/11) и PowerShell 7.
+  Messages are in English on purpose: the classic Windows console font often
+  cannot show Cyrillic. Works with Windows PowerShell 5.1 and PowerShell 7.
 #>
 param([switch]$Reconfigure)
 
@@ -25,14 +26,38 @@ $StatePath = Join-Path $AppDir 'deploy.local.json'
 
 function Step([string]$t) { Write-Host ''; Write-Host "== $t" -ForegroundColor Cyan }
 function Ok([string]$t) { Write-Host "   [OK] $t" -ForegroundColor Green }
-function Warn([string]$t) { Write-Host "   [!] $t" -ForegroundColor Yellow }
+function Warn([string]$t) { Write-Host "   [!] $(Latin $t)" -ForegroundColor Yellow }
 function Info([string]$t) { Write-Host "   $t" -ForegroundColor Gray }
 function Stop-With([string]$t) {
     Write-Host ''
-    Write-Host "[X] $t" -ForegroundColor Red
+    Write-Host "[X] $(Latin $t)" -ForegroundColor Red
     exit 1
 }
 function Def($v, $d) { if ($v) { return $v } return $d }
+
+# Server messages (from the app / cPanel) can be in Bulgarian; the console font
+# may not show Cyrillic, so they are printed transliterated.
+# Latin for U+0430..U+044F (а..я, incl. ы and э).
+$TranslitLat = 'a','b','v','g','d','e','zh','z','i','y','k','l','m','n','o','p',
+               'r','s','t','u','f','h','ts','ch','sh','sht','a','y','y','e','yu','ya'
+$Translit = @{}
+for ($i = 0; $i -lt 32; $i++) { $Translit[[char](0x430 + $i)] = $TranslitLat[$i] }
+function Latin([string]$s) {
+    $sb = New-Object System.Text.StringBuilder
+    foreach ($ch in $s.ToCharArray()) {
+        $lower = [char]::ToLower($ch)
+        if ($Translit.ContainsKey($lower)) {
+            $t = $Translit[$lower]
+            if ($ch -cne $lower) { $t = $t.Substring(0, 1).ToUpper() + $t.Substring(1) }
+            [void]$sb.Append($t)
+        } elseif ([int]$ch -gt 127) {
+            [void]$sb.Append($(if ($ch -eq [char]0x2014 -or $ch -eq [char]0x2013) { '-' } elseif ($ch -eq [char]0xBB) { '>' } else { '"' }))
+        } else {
+            [void]$sb.Append($ch)
+        }
+    }
+    return $sb.ToString()
+}
 
 function Ask([string]$prompt, [string]$default = '') {
     $label = if ($default) { "   $prompt [$default]" } else { "   $prompt" }
@@ -52,10 +77,10 @@ function AskSecret([string]$prompt, [switch]$AllowEmpty) {
 }
 
 function AskYes([string]$prompt, [bool]$default = $true) {
-    $hint = if ($default) { '[Д/н]' } else { '[д/Н]' }
+    $hint = if ($default) { '[Y/n]' } else { '[y/N]' }
     $v = (Read-Host "   $prompt $hint").Trim().ToLower()
     if ($v -eq '') { return $default }
-    return @('д', 'да', 'y', 'yes') -contains $v
+    return @('y', 'yes', 'd', 'da') -contains $v
 }
 
 # ---------------- запомнени (несекретни) отговори ----------------
@@ -106,10 +131,10 @@ function To-Query($params) {
 
 function Cp-Parse($r) {
     if ($r.Code -eq 401 -or $r.Code -eq 403) {
-        throw 'cPanel отказа достъп — проверете потребителското име и паролата/токена.'
+        throw 'cPanel refused access - check the username and password/token.'
     }
     try { return $r.Body | ConvertFrom-Json }
-    catch { throw "cPanel върна неочакван отговор (HTTP $($r.Code)). Проверете адреса на cPanel." }
+    catch { throw "cPanel returned an unexpected response (HTTP $($r.Code)). Check the cPanel address." }
 }
 
 function Uapi([string]$module, [string]$func, $params = $null, $content = $null) {
@@ -131,7 +156,7 @@ function Api2([string]$module, [string]$func, $params = $null) {
     if ($params) { foreach ($k in $params.Keys) { $q[$k] = $params[$k] } }
     $j = Cp-Parse (Send-Http $Cp 'GET' ("$CpBase/json-api/cpanel" + (To-Query $q)) $null @{ Authorization = $CpAuth })
     $r = $j.cpanelresult
-    if (-not $r) { throw ($module + '.' + $func + ': неочакван отговор') }
+    if (-not $r) { throw ($module + '.' + $func + ': unexpected response') }
     if ($r.error -or ($r.event -and $r.event.result -eq 0)) { throw ($module + '.' + $func + ': ' + $r.error) }
     return $r.data
 }
@@ -150,7 +175,7 @@ function Upload-Files([string]$dir, $items) {
     $data = Uapi 'Fileman' 'upload_files' $null $mp
     if ([int]$data.failed -gt 0) {
         $why = @($data.uploads) | Where-Object { $_.status -ne 1 } | ForEach-Object { "$($_.file): $($_.reason)" }
-        throw ('качването не успя — ' + ($why -join '; '))
+        throw ('upload failed - ' + ($why -join '; '))
     }
 }
 
@@ -177,56 +202,56 @@ function Php-Str([string]$s) { return "'" + ($s -replace '\\', '\\' -replace "'"
 
 # Пита за данните на config.php, проверява PIN-а за docs и го качва.
 function Configure-App {
-    Step 'Настройки на приложението'
-    $p = AskSecret 'Парола за вход в приложението (Enter = генерирай)' -AllowEmpty
+    Step 'App settings'
+    $p = AskSecret 'Password for logging into the app (Enter = generate one)' -AllowEmpty
     if (-not $p) {
         $p = New-Password
         Write-Host ''
-        Write-Host "   Генерирана парола: $p" -ForegroundColor White -BackgroundColor DarkBlue
-        Write-Host '   Запишете я — с нея влизате в приложението.' -ForegroundColor White
+        Write-Host "   Generated password: $p" -ForegroundColor White -BackgroundColor DarkBlue
+        Write-Host '   Write it down - you log into the app with it.' -ForegroundColor White
     } elseif ($p.Length -lt 6) {
-        Warn 'Паролата е твърде къса — генерирам нова.'
+        Warn 'Password too short (min 6) - generating one.'
         $p = New-Password
-        Write-Host "   Генерирана парола: $p" -ForegroundColor White -BackgroundColor DarkBlue
+        Write-Host "   Generated password: $p" -ForegroundColor White -BackgroundColor DarkBlue
     }
     $script:AppPassword = $p
 
     Info ''
-    $mail = Ask 'Имейл адрес, който да се проверява' (Def $State.imapUser '')
-    while (-not $mail) { $mail = Ask 'Имейл адрес, който да се проверява' }
+    $mail = Ask 'Email address to watch' (Def $State.imapUser '')
+    while (-not $mail) { $mail = Ask 'Email address to watch' }
     $isGmail = $mail -match '@(gmail|googlemail)\.com$'
     if ($isGmail) {
         $imapHost = 'imap.gmail.com'
-        Info 'За Gmail е нужна „Парола за приложения“ (обикновената парола не работи).'
-        Info 'Изисква включено „Потвърждаване в 2 стъпки“ в Google акаунта.'
-        if (AskYes 'Да отворя ли страницата на Google, за да я създадете?' $true) {
+        Info 'Gmail needs an "App password" (your normal password will not work).'
+        Info 'It requires 2-Step Verification to be on in your Google account.'
+        if (AskYes 'Open the Google page to create one?' $true) {
             Start-Process 'https://myaccount.google.com/apppasswords'
         }
-        $imapPass = (AskSecret 'Парола за приложения (16 букви)') -replace '\s', ''
+        $imapPass = (AskSecret 'App password (16 letters)') -replace '\s', ''
     } else {
-        $imapHost = Ask 'IMAP сървър' (Def $State.imapHost "mail.$RootDomain")
-        $imapPass = AskSecret "Парола на пощата $mail"
+        $imapHost = Ask 'IMAP server' (Def $State.imapHost "mail.$RootDomain")
+        $imapPass = AskSecret "Mailbox password for $mail"
     }
 
     Info ''
-    $docsUrl = (Ask 'Адрес на приложението за документи' (Def $State.docsUrl 'https://docs.rtdalia.com')).TrimEnd('/')
+    $docsUrl = (Ask 'Doc transcriber address' (Def $State.docsUrl 'https://docs.rtdalia.com')).TrimEnd('/')
     while ($true) {
-        $pin = AskSecret "Access PIN за $docsUrl"
+        $pin = AskSecret "Access PIN for $docsUrl"
         try {
             $r = Send-Http $Site 'GET' "$docsUrl/api/state-version" $null @{ 'X-Sync-Token' = $pin }
-            if ($r.Code -eq 200) { Ok 'PIN-ът е верен'; break }
-            if ($r.Code -eq 401) { Warn 'Грешен PIN, опитайте пак.'; continue }
-            Warn "Неочакван отговор от docs (HTTP $($r.Code)) — продължавам."
+            if ($r.Code -eq 200) { Ok 'PIN is correct'; break }
+            if ($r.Code -eq 401) { Warn 'Wrong PIN, try again.'; continue }
+            Warn "Unexpected response from docs (HTTP $($r.Code)) - continuing."
             break
         } catch {
-            Warn ('Няма връзка с docs: ' + (Err-Text $_) + ' — продължавам.')
+            Warn ('Cannot reach docs: ' + (Err-Text $_) + ' - continuing.')
             break
         }
     }
 
     $config = @(
         '<?php'
-        '// Създаден от deploy.ps1 — може да се редактира и ръчно (вижте config.sample.php).'
+        '// Written by deploy.ps1 - can also be edited by hand (see config.sample.php).'
         ''
         "define('APP_PASSWORD', $(Php-Str $p));"
         ''
@@ -242,7 +267,7 @@ function Configure-App {
     ) -join "`n"
     $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes($config)
     Upload-Files $DocRoot @([pscustomobject]@{ Name = 'config.php'; Bytes = $bytes })
-    Ok 'config.php е качен'
+    Ok 'config.php uploaded'
 
     $State.imapUser = $mail
     $State.imapHost = $imapHost
@@ -254,21 +279,21 @@ function Configure-App {
 # ======================================================================
 
 Write-Host ''
-Write-Host '  Фактури от пощата — инсталация на хостинга' -ForegroundColor White
+Write-Host '  Mail assistant - install on the hosting' -ForegroundColor White
 Write-Host '  ------------------------------------------'
-if (-not (Test-Path (Join-Path $AppDir 'api.php'))) { Stop-With "Пуснете скрипта от папката mail-assistant ($AppDir)." }
+if (-not (Test-Path (Join-Path $AppDir 'api.php'))) { Stop-With "Run the script from the mail-assistant folder ($AppDir)." }
 
 # ---- 1. cPanel ----
-Step 'Вход в cPanel'
-Info 'Данните са тези, с които влизате в cPanel на SuperHosting (не FTP акаунт).'
-Info 'Ако cPanel е с двуфакторна защита, ползвайте API токен: cPanel » Security » Manage API Tokens.'
+Step 'cPanel login'
+Info 'Use the login you use for cPanel at SuperHosting (not an FTP account).'
+Info 'If cPanel has two-factor login, use an API token: cPanel > Security > Manage API Tokens.'
 $cpHost = Def $State.cpanelHost 'rtdalia.com:2083'
 while ($true) {
-    $cpHost = (Ask 'Адрес на cPanel' $cpHost) -replace '^https?://', '' -replace '/.*$', ''
+    $cpHost = (Ask 'cPanel address' $cpHost) -replace '^https?://', '' -replace '/.*$', ''
     if ($cpHost -notmatch ':\d+$') { $cpHost += ':2083' }
     $CpBase = "https://$cpHost"
-    $CpUser = Ask 'cPanel потребителско име' (Def $State.cpanelUser '')
-    $secret = AskSecret 'cPanel парола (или API токен)'
+    $CpUser = Ask 'cPanel username' (Def $State.cpanelUser '')
+    $secret = AskSecret 'cPanel password (or API token)'
     if ($secret -cmatch '^[A-Z0-9]{32}$') { # API токените са 32 главни букви/цифри
         $CpAuth = "cpanel ${CpUser}:$secret"
     } else {
@@ -276,12 +301,12 @@ while ($true) {
     }
     try {
         $domains = Uapi 'DomainInfo' 'list_domains'
-        if (-not $domains.main_domain) { throw 'cPanel не върна списък с домейни.' }
-        Ok "Влязохте като $CpUser ($($domains.main_domain))"
+        if (-not $domains.main_domain) { throw 'cPanel returned no domain list.' }
+        Ok "Logged in as $CpUser ($($domains.main_domain))"
         break
     } catch {
         $m = Err-Text $_
-        if ($m -match 'SSL|certificate|trust') { $m += ' — опитайте адреса на сървъра от писмото на SuperHosting.' }
+        if ($m -match 'SSL|certificate|trust') { $m += ' - try the server hostname from your SuperHosting welcome email.' }
         Warn $m
     }
 }
@@ -290,14 +315,14 @@ $State.cpanelUser = $CpUser
 Save-State
 
 # ---- 2. Субдомейн ----
-Step 'Субдомейн'
+Step 'Subdomain'
 $RootDomain = Def $State.rootDomain $domains.main_domain
-$sub = Ask 'Субдомейн за приложението' (Def $State.sub 'inbox')
+$sub = Ask 'Subdomain for the app' (Def $State.sub 'inbox')
 $Fqdn = "$sub.$RootDomain"
 if (@($domains.sub_domains) -contains $Fqdn) {
-    Ok "$Fqdn вече съществува"
+    Ok "$Fqdn already exists"
 } else {
-    if (-not (AskYes "Да създам ли $Fqdn?" $true)) { Stop-With 'Прекъснато.' }
+    if (-not (AskYes "Create $Fqdn?" $true)) { Stop-With 'Cancelled.' }
     try {
         [void](Uapi 'SubDomain' 'addsubdomain' ([ordered]@{ domain = $sub; rootdomain = $RootDomain; dir = $Fqdn }))
     } catch {
@@ -305,19 +330,19 @@ if (@($domains.sub_domains) -contains $Fqdn) {
         Warn (Err-Text $_)
         [void](Uapi 'SubDomain' 'addsubdomain' ([ordered]@{ domain = $sub; rootdomain = $RootDomain; dir = "public_html/$Fqdn" }))
     }
-    Ok "Създаден $Fqdn"
+    Ok "Created $Fqdn"
 }
 $info = Uapi 'DomainInfo' 'single_domain_data' @{ domain = $Fqdn }
 $DocRoot = [string]$info.documentroot
-if (-not $DocRoot) { Stop-With "cPanel не върна папката на $Fqdn." }
-Info "Папка: $DocRoot"
+if (-not $DocRoot) { Stop-With "cPanel did not return the folder of $Fqdn." }
+Info "Folder: $DocRoot"
 $State.rootDomain = $RootDomain
 $State.sub = $sub
 Save-State
 $SiteBase = "https://$Fqdn"
 
 # ---- 3. Качване на файловете ----
-Step 'Качване на файловете'
+Step 'Uploading files'
 $files = Get-ChildItem -Path $AppDir -Recurse -File -Force | ForEach-Object {
     $rel = $_.FullName.Substring($AppDir.Length).TrimStart('\', '/') -replace '\\', '/'
     [pscustomobject]@{ Rel = $rel; Path = $_.FullName }
@@ -342,11 +367,11 @@ foreach ($g in $groups) {
     }
     try { Upload-Files $target @($items) } catch { Stop-With ("$($g.Name)/: " + (Err-Text $_)) }
 }
-Ok "Качени $(@($files).Count) файла"
+Ok "Uploaded $(@($files).Count) files"
 
 # ---- 4. SSL и PHP ----
-Step 'SSL сертификат и PHP'
-try { [void](Uapi 'SSL' 'start_autossl_check'); Info 'Пусната е проверка за безплатен SSL (AutoSSL).' } catch { }
+Step 'SSL certificate and PHP'
+try { [void](Uapi 'SSL' 'start_autossl_check'); Info 'Requested a free SSL certificate (AutoSSL).' } catch { }
 $deadline = (Get-Date).AddMinutes(20)
 $phpFixed = $false
 $lastErr = ''
@@ -355,16 +380,16 @@ while ($true) {
     try {
         $r = Site-Get 'list'
         if ($r.Body -match 'PHP 8\.0') {
-            if ($phpFixed) { Stop-With 'Сайтът още е на стар PHP. Задайте PHP 8.1+ в cPanel » MultiPHP Manager и пуснете скрипта пак.' }
-            Warn 'Сайтът работи със стара версия на PHP — сменям я.'
+            if ($phpFixed) { Stop-With 'The site is still on old PHP. Set PHP 8.1+ in cPanel > MultiPHP Manager and run the script again.' }
+            Warn 'The site runs an old PHP version - switching it.'
             try {
                 $inst = Uapi 'LangPHP' 'php_get_installed_versions'
                 $best = @($inst.versions) | Where-Object { $_ -match '\d{2}$' } |
                     Sort-Object { [int]($_ -replace '\D', '') } | Select-Object -Last 1
                 [void](Uapi 'LangPHP' 'php_set_vhost_versions' ([ordered]@{ version = $best; vhost = $Fqdn }))
-                Ok "PHP е сменен на $best"
+                Ok "PHP switched to $best"
             } catch {
-                Stop-With ('Не успях да сменя PHP (' + (Err-Text $_) + '). Задайте PHP 8.1+ в cPanel » MultiPHP Manager и пуснете скрипта пак.')
+                Stop-With ('Could not switch PHP (' + (Err-Text $_) + '). Set PHP 8.1+ in cPanel > MultiPHP Manager and run the script again.')
             }
             $phpFixed = $true
             Start-Sleep -Seconds 5
@@ -377,47 +402,47 @@ while ($true) {
     }
     if ((Get-Date) -gt $deadline) {
         Write-Host ''
-        Stop-With "$SiteBase още не отговаря ($lastErr). SSL сертификатът и DNS понякога отнемат до час — пуснете скрипта пак по-късно."
+        Stop-With "$SiteBase is not responding yet ($lastErr). SSL and DNS for a new subdomain can take up to an hour - run the script again later."
     }
-    if (-not $waited) { Info 'Изчаквам сайтът да заработи по HTTPS (обикновено няколко минути)'; $waited = $true }
+    if (-not $waited) { Info 'Waiting for the site to work over HTTPS (usually a few minutes)'; $waited = $true }
     Write-Host '.' -NoNewline
     Start-Sleep -Seconds 15
 }
 if ($waited) { Write-Host '' }
-Ok "$SiteBase работи"
+Ok "$SiteBase is up"
 
 # ---- 5. config.php ----
 $AppPassword = $null
 $keep = $false
 if ($State.configured -and $r.Code -eq 401 -and -not $Reconfigure) {
-    $keep = AskYes 'Настройките (поща, PIN) вече са качени. Да ги запазя ли?' $true
+    $keep = AskYes 'Settings (mail, PIN) are already uploaded. Keep them?' $true
 }
 if (-not $keep) { Configure-App }
 
 # ---- 6. Проверка ----
-Step 'Проверка на връзките'
+Step 'Checking connections'
 $settings = $null
 while ($true) {
-    if (-not $AppPassword) { $AppPassword = AskSecret 'Парола за вход в приложението (за проверката)' }
+    if (-not $AppPassword) { $AppPassword = AskSecret 'App login password (for the check)' }
     $r = Site-Post 'login' @{ password = $AppPassword }
     if ($r.Code -ne 200) {
-        Warn 'Приложението не прие паролата.'
+        Warn 'The app did not accept the password.'
         $AppPassword = $null
         continue
     }
     $t = (Site-Get 'test').Body | ConvertFrom-Json
-    if ($t.imap.ok) { Ok ('Поща: ' + $State.imapUser) } else { Warn ('Поща: ' + $t.imap.error) }
-    if ($t.docs.ok) { Ok 'docs.rtdalia.com: PIN-ът е приет' } else { Warn ('docs: ' + $t.docs.error) }
+    if ($t.imap.ok) { Ok ('Mailbox: ' + $State.imapUser) } else { Warn ('Mailbox: ' + $t.imap.error) }
+    if ($t.docs.ok) { Ok 'docs.rtdalia.com: PIN accepted' } else { Warn ('docs: ' + $t.docs.error) }
     if ($t.imap.ok -and $t.docs.ok) {
         $settings = ((Site-Get 'settings').Body | ConvertFrom-Json).settings
         break
     }
-    if (-not (AskYes 'Да въведа ли данните отново?' $true)) { break }
+    if (-not (AskYes 'Enter the details again?' $true)) { break }
     Configure-App
 }
 
 # ---- 7. Cron ----
-Step 'Автоматична проверка на пощата (cron)'
+Step 'Automatic mail check (cron)'
 $cronCmd = if ($settings -and $settings.cronCommand) { [string]$settings.cronCommand } else {
     "/usr/local/bin/php $DocRoot/cron.php >> $DocRoot/data/cron.log 2>&1"
 }
@@ -428,20 +453,20 @@ try {
         $c -and (@($cronPaths | Where-Object { $_ -and $c.Contains($_) }).Count -gt 0)
     }
     if ($existing) {
-        Ok 'Cron задачата вече съществува'
-    } elseif (AskYes 'Да добавя ли проверка на пощата на всеки 15 минути?' $true) {
+        Ok 'The cron job already exists'
+    } elseif (AskYes 'Add a mail check every 15 minutes?' $true) {
         [void](Api2 'Cron' 'add_line' ([ordered]@{
             command = $cronCmd; minute = '*/15'; hour = '*'; day = '*'; month = '*'; weekday = '*'
         }))
-        Ok 'Добавена: на всеки 15 минути'
+        Ok 'Added: every 15 minutes'
         Info $cronCmd
     }
 } catch {
-    Warn ('Cron не можа да се добави (' + (Err-Text $_) + '). Добавете го ръчно в cPanel » Cron Jobs:')
+    Warn ('Could not add the cron job (' + (Err-Text $_) + '). Add it by hand in cPanel > Cron Jobs:')
     Info $cronCmd
 }
 
 Write-Host ''
-Write-Host "  Готово: $SiteBase" -ForegroundColor Green
-Info 'Подателите за автоматично изпращане се задават в приложението » Настройки.'
-if (AskYes 'Да отворя ли приложението в браузъра?' $true) { Start-Process "$SiteBase/" }
+Write-Host "  Done: $SiteBase" -ForegroundColor Green
+Info 'Senders for automatic sending are set in the app > Settings (gear icon).'
+if (AskYes 'Open the app in the browser?' $true) { Start-Process "$SiteBase/" }
