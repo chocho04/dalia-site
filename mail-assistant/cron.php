@@ -18,8 +18,11 @@ try {
     $scan = scan_mailbox($imap, $uidv);
     $auto = auto_send_pending($imap, $uidv);
     $imap->logout();
-    echo date('Y-m-d H:i') . " проверени: {$scan['checked']}, с файлове: {$scan['found']}, "
-        . "изпратени: {$auto['sent']}, грешки: {$auto['failed']}\n";
+    // Ред в лога само когато има нещо ново, за да не расте излишно.
+    if ($scan['checked'] || $auto['sent'] || $auto['failed']) {
+        echo date('Y-m-d H:i') . " проверени: {$scan['checked']}, с файлове: {$scan['found']}, "
+            . "изпратени: {$auto['sent']}, грешки: {$auto['failed']}\n";
+    }
 } catch (Throwable $e) {
     fwrite(STDERR, date('Y-m-d H:i') . ' Грешка: ' . $e->getMessage() . "\n");
     exit(1);

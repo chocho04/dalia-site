@@ -152,6 +152,25 @@ function settings_payload(): array {
         'imapHost'       => IMAP_HOST,
         'imapFolder'     => IMAP_FOLDER,
         'transcriberUrl' => transcriber_base(),
-        'cronCommand'    => 'php ' . realpath(__DIR__ . '/cron.php'),
+        'cronCommand'    => php_cli_binary() . ' ' . realpath(__DIR__ . '/cron.php')
+            . ' >> ' . realpath(__DIR__ . '/data') . '/cron.log 2>&1',
     ];
+}
+
+// PHP за командния ред със същата версия като сайта. Под PHP-FPM PHP_BINARY
+// сочи към …/sbin/php-fpm (cPanel EA) или …/bin/lsphp (CloudLinux), а CLI
+// версията е в съседната bin/ папка. Голото „php“ в cron често е друга версия.
+function php_cli_binary(): string {
+    $v = PHP_MAJOR_VERSION . PHP_MINOR_VERSION;
+    $candidates = [];
+    if (PHP_BINARY !== '') {
+        $candidates[] = dirname(PHP_BINARY) . '/php';
+        $candidates[] = dirname(PHP_BINARY, 2) . '/bin/php';
+    }
+    $candidates[] = "/opt/cpanel/ea-php$v/root/usr/bin/php";
+    $candidates[] = "/opt/alt/php$v/usr/bin/php";
+    foreach ($candidates as $c) {
+        if (@is_file($c) && @is_executable($c)) return $c;
+    }
+    return '/usr/local/bin/php';
 }
