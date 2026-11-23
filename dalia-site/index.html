@@ -64,6 +64,7 @@ nav a:hover{color:var(--sage-deep)}
 .hero-cta{display:flex;flex-wrap:wrap;gap:12px}
 .btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--sans);font-size:15px;font-weight:600;padding:14px 26px;border-radius:999px;border:none;cursor:pointer;transition:transform .15s,background .2s}
 .btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-solid{background:#F5F4EE;color:var(--sage-deep)}
 .btn-solid:hover{background:#fff}
 .btn-ghost{background:rgba(30,34,28,.25);color:#F5F4EE;border:1.5px solid rgba(245,244,238,.65)}
@@ -142,6 +143,63 @@ h2{font-family:var(--script);font-weight:400;font-size:clamp(42px,9vw,60px);line
 .res-ok.err{background:#F7E1DD;border:1px solid #E0B4AC;color:#8E352A}
 .res-ok .sum{font-weight:600;margin-top:6px}
 
+/* Новогодишен куверт 2027 — сезонна секция под hero-то. Скриптът я маха сам
+   след празника (NY_END); за ръчно махане изтрийте всичко с data-ny. */
+:root{--ny:#2A3323;--ny-gold:#DCC38B;--ny-line:rgba(241,239,230,.14)}
+.hero:has(+ .ny)::after{background:linear-gradient(180deg,rgba(42,51,35,0),var(--ny))}
+.hero-ny{display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 15px 8px 12px;border-radius:999px;background:rgba(30,34,28,.42);border:1.5px solid rgba(220,195,139,.7);color:#F4E9CC;font-size:13.5px;font-weight:600;transition:background .2s,border-color .2s}
+.hero-ny:hover{background:rgba(30,34,28,.6);border-color:var(--ny-gold)}
+.hero-ny svg{flex:none;color:var(--ny-gold)}
+.ny{position:relative;isolation:isolate;overflow:hidden;background:var(--ny);color:#F1EFE6;padding:34px 0 150px}
+.ny::after{content:'';position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(180deg,rgba(239,238,233,0),var(--linen));pointer-events:none}
+@supports not selector(:has(*)){.ny::before{content:'';position:absolute;left:0;right:0;top:0;height:90px;background:linear-gradient(180deg,var(--linen),rgba(239,238,233,0));pointer-events:none}}
+.ny-lights{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.ny-lights i{position:absolute;inset:0;filter:blur(7px);animation:nytwinkle 5.5s ease-in-out infinite alternate;background:
+  radial-gradient(circle 38px at 6% 9%,rgba(236,201,128,.55),transparent 72%),
+  radial-gradient(circle 22px at 19% 4%,rgba(214,104,84,.45),transparent 72%),
+  radial-gradient(circle 54px at 97% 30%,rgba(236,201,128,.3),transparent 72%),
+  radial-gradient(circle 26px at 99% 61%,rgba(245,236,214,.3),transparent 72%),
+  radial-gradient(circle 46px at 1% 66%,rgba(236,201,128,.24),transparent 72%)}
+.ny-lights i + i{animation-duration:7.5s;animation-delay:-3s;background:
+  radial-gradient(circle 28px at 13% 15%,rgba(245,236,214,.4),transparent 72%),
+  radial-gradient(circle 20px at 91% 10%,rgba(214,104,84,.4),transparent 72%),
+  radial-gradient(circle 34px at 99% 45%,rgba(236,201,128,.36),transparent 72%),
+  radial-gradient(circle 24px at 2% 82%,rgba(214,104,84,.26),transparent 72%),
+  radial-gradient(circle 40px at 96% 84%,rgba(236,201,128,.2),transparent 72%)}
+@keyframes nytwinkle{from{opacity:.35}to{opacity:1}}
+.ny .kicker{color:var(--ny-gold)}
+.ny h2{font-size:clamp(46px,10.5vw,68px);text-wrap:balance}
+.ny h2 em{font-style:normal;color:var(--ny-gold)}
+.ny .lead{color:#C9CFBD}
+.ny-poster{display:block;width:min(60vw,250px);margin:30px auto 6px;padding:0;border:0;background:none;color:#AEB6A0;font-family:var(--sans);font-size:12.5px;cursor:zoom-in}
+.ny-poster img{width:100%;height:auto;border-radius:6px;box-shadow:0 14px 30px rgba(0,0,0,.45);transform:rotate(-2deg);transition:transform .45s cubic-bezier(.22,1,.36,1)}
+.ny-poster:hover img,.ny-poster:focus-visible img{transform:rotate(0) scale(1.02)}
+.ny-poster:focus-visible{outline:none}
+.ny-poster:focus-visible img{outline:3px solid var(--ny-gold);outline-offset:4px}
+.ny-poster span{display:block;margin-top:16px}
+.ny-menu{list-style:none;margin-top:28px;border-top:1px solid var(--ny-line)}
+.ny-menu li{display:grid;grid-template-columns:22px 1fr;column-gap:12px;align-items:start;padding:14px 0;border-bottom:1px solid var(--ny-line)}
+.ny-menu svg{margin-top:4px}
+.ny-menu b{display:block;font-size:17px;font-weight:600;line-height:1.35}
+.ny-menu small{display:block;font-size:14px;color:#B9C1AA;margin-top:2px}
+.ny-menu .or{display:block;font-family:var(--script);font-size:25px;line-height:1.2;color:var(--ny-gold)}
+.ny-incl{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:24px}
+.ny-incl li{display:flex;align-items:flex-start;gap:12px;font-size:14.5px;line-height:1.45;color:#DCE0D2}
+.ny-incl svg{flex:none;margin-top:1px;color:var(--ny-gold)}
+.ny-book{display:flex;flex-wrap:wrap;align-items:center;gap:18px 30px;margin-top:32px}
+.ny-price{font-family:var(--script);font-size:68px;line-height:.95;color:var(--ny-gold);white-space:nowrap}
+.ny-price small{display:block;font-family:var(--sans);font-size:12.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#B9C1AA;margin-top:8px}
+.ny-cta{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.ny-call{font-size:14px;color:#C9CFBD}
+.ny-call a{color:#F1EFE6;font-weight:600;border-bottom:1px solid rgba(241,239,230,.4)}
+.ny-call a:hover{border-color:#F1EFE6}
+@media(min-width:900px){
+  .ny{padding:44px 0 170px}
+  .ny-grid{display:grid;grid-template-columns:minmax(0,1fr) 350px;column-gap:72px;align-items:start}
+  .ny-grid > *{grid-column:1}
+  .ny-poster{grid-column:2;grid-row:1 / span 4;width:100%;margin:14px 0 0}
+}
+
 .fade-dark{height:130px;background:linear-gradient(180deg,var(--linen),var(--charcoal))}
 footer{background:var(--charcoal);color:#C9CDC2;padding:20px 0 40px}
 .foot-grid{display:grid;grid-template-columns:1fr;gap:28px}
@@ -185,7 +243,7 @@ footer a:hover{color:#fff}
 .lm-extra{margin-top:20px;border-top:1px solid var(--linen-deep);padding-top:14px;white-space:pre-wrap;font-size:13.5px;line-height:1.6;color:#6C6F68}
 .lm-note{padding:26px 0 10px;text-align:center;color:var(--muted);font-size:14.5px}
 
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.menu-track,.lb{transition:none}.menu-bg i{animation:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.menu-track,.lb,.ny-poster img{transition:none}.menu-bg i,.ny-lights i{animation:none}}
 </style>
 </head>
 <body>
@@ -199,6 +257,7 @@ footer a:hover{color:#fff}
       </span>
     </a>
     <nav aria-label="Основна навигация">
+      <a href="#newyear" data-ny data-i18n="nav_ny">Нова година</a>
       <a href="#menu" data-i18n="nav_menu">Меню</a>
       <a href="#place" data-i18n="nav_place">Мястото</a>
       <a href="#reservation" data-i18n="nav_res">Резервация</a>
@@ -219,6 +278,10 @@ footer a:hover{color:#fff}
   </video>
   <div class="hero-shade"></div>
   <div class="hero-in">
+    <a class="hero-ny" href="#newyear" data-ny>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.5l2.3 7.2 7.2 2.3-7.2 2.3L12 20.5l-2.3-7.2L2.5 11l7.2-2.3z"/></svg>
+      <span data-i18n="ny_pill">Новогодишен куверт 2027</span>
+    </a>
     <h1>Далия</h1>
     <div class="tag" data-i18n="hero_tag">Ресторант и градина</div>
     <p data-i18n="hero_p">Свежа кухня, уютна лятна градина и детски кът — мястото за дълги обеди, вечери с приятели и семейни празници.</p>
@@ -229,6 +292,51 @@ footer a:hover{color:#fff}
     </div>
   </div>
 </div>
+
+<section class="ny" id="newyear" data-ny aria-labelledby="nyTitle">
+  <div class="ny-lights" aria-hidden="true"><i></i><i></i></div>
+  <div class="wrap ny-grid">
+    <div class="ny-head">
+      <div class="kicker" data-i18n="ny_kicker">31 декември</div>
+      <h2 id="nyTitle"><span data-i18n="ny_h2">Новогодишен куверт</span> <em>2027</em></h2>
+      <p class="lead" data-i18n="ny_lead">Посрещнете новата година в Далия — празнично меню, напитки, баница с късмети и DJ програма.</p>
+    </div>
+    <button class="ny-poster" id="nyPoster" type="button">
+      <img src="assets/newyear-2027-card.webp" width="720" height="1080" loading="lazy" alt="Плакат: Новогодишен куверт 2027 в ресторант Далия">
+      <span data-i18n="ny_poster">Докоснете, за да разгледате плаката</span>
+    </button>
+    <ul class="ny-menu">
+      <li><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20C4 12 10 5 20 4c-1 10-8 16-16 16Z" fill="#9DAE7C"/></svg>
+        <div><b data-i18n="ny_c1">Вариация на бурата</b><small data-i18n="ny_c1d">Домати, печена чушка, маслини, песто, рукола, бурата</small></div></li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20C4 12 10 5 20 4c-1 10-8 16-16 16Z" fill="#9DAE7C"/></svg>
+        <div><b data-i18n="ny_c2">Станимашки сармички</b></div></li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20C4 12 10 5 20 4c-1 10-8 16-16 16Z" fill="#9DAE7C"/></svg>
+        <div><b data-i18n="ny_c3a">Свинско бонфиле в бекон и ябълков сайдер с гарнитура</b><span class="or" data-i18n="ny_or">или</span><b data-i18n="ny_c3b">Филе сьомга терияки</b></div></li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20C4 12 10 5 20 4c-1 10-8 16-16 16Z" fill="#9DAE7C"/></svg>
+        <div><b data-i18n="ny_c4">Чийзкейк Сан Себастиан</b><small data-i18n="ny_c4d">с малиново кули</small></div></li>
+      <li><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20C4 12 10 5 20 4c-1 10-8 16-16 16Z" fill="#9DAE7C"/></svg>
+        <div><b data-i18n="ny_c5">Плодове и ядки</b></div></li>
+    </ul>
+    <ul class="ny-incl">
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10l-.8 5.5a4.2 4.2 0 0 1-8.4 0L7 3zM12 13v8M8.5 21h7"/></svg>
+        <span data-i18n="ny_i1">Минерална вода + 1 бр. безалкохолно, 100 г алкохол + шампанско</span></li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.6 5.6 1.9-5.6 1.9L12 18l-1.9-5.6-5.6-1.9 5.6-1.9zM19 16.5v4M17 18.5h4"/></svg>
+        <span data-i18n="ny_i2">Новогодишна баница с късмети</span></li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+        <span data-i18n="ny_i3">DJ програма</span></li>
+    </ul>
+    <div class="ny-book">
+      <div class="ny-price">69 €<small data-i18n="ny_price_lbl">цена на куверт</small></div>
+      <div class="ny-cta">
+        <a class="btn btn-solid" href="tel:+359894347031">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+          <span data-i18n="ny_cta">Обадете се: 0894 347 031</span>
+        </a>
+        <div class="ny-call" data-i18n="ny_call">Резервации само по телефона — изисква се капаро.</div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <section id="menu" style="padding-top:26px">
   <div class="menu-bgs" id="menuBgs" aria-hidden="true"></div>
@@ -436,6 +544,22 @@ const I18N = {
     hero_tag: "Ресторант и градина",
     hero_p: "Свежа кухня, уютна лятна градина и детски кът — мястото за дълги обеди, вечери с приятели и семейни празници.",
     hero_cta1: "Резервирай маса", hero_cta2: "Виж менюто", hero_cta_lunch: "Обедно меню",
+    nav_ny: "Нова година", ny_pill: "Новогодишен куверт 2027",
+    ny_kicker: "31 декември", ny_h2: "Новогодишен куверт",
+    ny_lead: "Посрещнете новата година в Далия — празнично меню, напитки, баница с късмети и DJ програма.",
+    ny_poster: "Докоснете, за да разгледате плаката", ny_poster_cap: "Новогодишен куверт 2027",
+    ny_c1: "Вариация на бурата", ny_c1d: "Домати, печена чушка, маслини, песто, рукола, бурата",
+    ny_c2: "Станимашки сармички",
+    ny_c3a: "Свинско бонфиле в бекон и ябълков сайдер с гарнитура", ny_or: "или", ny_c3b: "Филе сьомга терияки",
+    ny_c4: "Чийзкейк Сан Себастиан", ny_c4d: "с малиново кули",
+    ny_c5: "Плодове и ядки",
+    ny_i1: "Минерална вода + 1 бр. безалкохолно, 100 г алкохол + шампанско",
+    ny_i2: "Новогодишна баница с късмети", ny_i3: "DJ програма",
+    ny_price_lbl: "цена на куверт", ny_cta: "Обадете се: 0894 347 031", ny_call: "Резервации само по телефона — изисква се капаро.",
+    ny_form_html: `Резервации за Новогодишната вечер (31 декември) се правят само по телефона — изисква се капаро. Обадете ни се за информация:
+      <a class="btn btn-green" style="margin-top:12px" href="tel:+359894347031">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+      0894 347 031</a>`,
     lunch_title: "Обедно меню", lunch_dishes: "Готвени ястия", lunch_soups: "Супи",
     lunch_err: "Менюто не се зареди — обадете ни се на 0894 347 031.",
     menu_kicker: "Меню", menu_h2: "Нашето меню",
@@ -477,6 +601,22 @@ const I18N = {
     hero_tag: "Restaurant & garden",
     hero_p: "Fresh cooking, a cosy summer garden and a kids corner — the place for long lunches, dinners with friends and family celebrations.",
     hero_cta1: "Book a table", hero_cta2: "See the menu", hero_cta_lunch: "Lunch menu",
+    nav_ny: "New Year", ny_pill: "New Year's Eve 2027",
+    ny_kicker: "31 December", ny_h2: "New Year's Eve dinner",
+    ny_lead: "See in the new year at Dalia — a festive menu, drinks, banitsa with fortunes and a DJ set.",
+    ny_poster: "Tap to see the poster", ny_poster_cap: "New Year's Eve 2027",
+    ny_c1: "Burrata variation", ny_c1d: "Tomatoes, roasted pepper, olives, pesto, rocket, burrata",
+    ny_c2: "Stanimaka-style sarmi (small stuffed rolls)",
+    ny_c3a: "Bacon-wrapped pork tenderloin in apple cider, with a side", ny_or: "or", ny_c3b: "Teriyaki salmon fillet",
+    ny_c4: "San Sebastián cheesecake", ny_c4d: "with raspberry coulis",
+    ny_c5: "Fruit and nuts",
+    ny_i1: "Mineral water + 1 soft drink, 100 ml of spirits + champagne",
+    ny_i2: "New Year's banitsa with fortunes", ny_i3: "DJ set",
+    ny_price_lbl: "per person", ny_cta: "Call 0894 347 031", ny_call: "Bookings by phone only — a deposit is required.",
+    ny_form_html: `New Year's Eve (31 December) can only be booked by phone — a deposit is required. Call us for details:
+      <a class="btn btn-green" style="margin-top:12px" href="tel:+359894347031">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+      0894 347 031</a>`,
     lunch_title: "Lunch menu", lunch_dishes: "Cooked dishes", lunch_soups: "Soups",
     lunch_err: "The menu could not be loaded — call us on 0894 347 031.",
     menu_kicker: "Menu", menu_h2: "What we cook",
@@ -911,8 +1051,38 @@ for (let m = 10 * 60; m <= 23 * 60 + 30; m += 30) {
 }
 fTime.value = '19:00';
 
+// Новогодишен куверт 2027: the poster opens in the lightbox, and the whole
+// promo (everything marked data-ny) removes itself once the night is over.
+const NY_END = new Date(2027, 0, 1, 6);
+if (new Date() > NY_END) {
+  document.querySelectorAll('[data-ny]').forEach(el => el.remove());
+} else {
+  document.getElementById('nyPoster').addEventListener('click', () =>
+    openLightbox('image', 'assets/newyear-2027.webp', I18N[lang].ny_poster_cap));
+}
+
+// New Year's Eve is booked by phone only (a deposit is required): for that
+// date the form shows a call-us note instead of sending. reserve.html has the
+// same guard.
+const NY_DATE = '2026-12-31';
+function nySync() {
+  const blocked = fDate.value === NY_DATE;
+  form.querySelector('button[type=submit]').disabled = blocked;
+  if (blocked) {
+    ok.classList.remove('err');
+    ok.innerHTML = I18N[lang].ny_form_html;
+    ok.classList.add('show');
+  } else if (ok.dataset.ny) {
+    ok.classList.remove('show');
+  }
+  ok.dataset.ny = blocked ? '1' : '';
+  return blocked;
+}
+fDate.addEventListener('change', nySync);
+
 form.addEventListener('submit', async e => {
   e.preventDefault();
+  if (nySync()) return;
   if (!form.reportValidity()) return;
   const d = Object.fromEntries(new FormData(form));
   const L = I18N[lang];
@@ -1036,6 +1206,7 @@ function applyLang() {
   });
   langBtn.textContent = lang === 'bg' ? 'EN' : 'БГ';
   ok.classList.remove('show');
+  nySync();
   buildMenu();
   if (lm.classList.contains('open')) renderLunch();
 }
